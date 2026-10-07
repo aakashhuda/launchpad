@@ -1,0 +1,43 @@
+{
+  "permissions": {
+    "allow": [
+      "Shell(mkdir:*)",
+      "Shell(rm:*)",
+      "Shell(python -m compileall app)",
+      "Shell(python3 -m compileall app)",
+      "Shell(python3 -c \"from app.main import app; print(app.title)\")",
+      "Shell(python3 -m pytest --collect-only -q)",
+      "Shell(cp:*)",
+      "Shell(APP_ENV=production python3 -c from app.core.config import settings; print(settings.app_env, settings.debug, settings.database_url))",
+      "Shell(APP_ENV=development python3 -c from app.core.config import settings; print(settings.app_env, settings.debug, settings.database_url))",
+      "Shell(APP_ENV=development ENV_FILE=.env.development python3 -c \"from app.core.config import settings; print(settings.app_env, settings.secret_key, settings.database_url, settings.redis_url)\")",
+      "Shell(command-code:*)",
+      "Shell(git:*)",
+      "Shell(python3 --version)",
+      "Shell(python3 -c import sqlalchemy, alembic; print('sqlalchemy', sqlalchemy.__version__); print('alembic', alembic.__version__) 2 >& 1)",
+      "Shell(pg_isready:*)",
+      "Shell(cat:*)",
+      "Shell(ls:*)",
+      "Shell(python3 -m venv .venv)",
+      "Shell(.venv/bin/pip:*)",
+      "Shell(.venv/bin/python:*)",
+      "Shell(psql:*)",
+      "Shell(echo:*)",
+      "Shell(which initdb pg_ctl postgres pg_ctlcluster 2>&1; echo \"---pg version---\"; (pg_config --version 2>&1 || true); echo \"---ls pg bin---\"; ls /usr/lib/postgresql/*/bin/ 2>/dev/null | head -30)",
+      "Shell(export:*)",
+      "Shell(tail:*)",
+      "Shell(cd /home/mahbub/Projects/launchpad/backend && export DATABASE_URL=\"postgresql+psycopg2://postgres@127.0.0.1:5433/postgres\" && export PYTHONPATH=\"$(pwd)\" && echo \"=== UPGRADE HEAD ===\" && .venv/bin/alembic upgrade head 2>&1 | tail -5 && echo \"=== DOWNGRADE BASE ===\" && .venv/bin/alembic downgrade base 2>&1 | tail -3 && echo \"=== RE-UPGRADE HEAD ===\" && .venv/bin/alembic upgrade head 2>&1 | tail -3 && echo \"=== VERIFY TABLES ===\" && PGPASSWORD= psql \"postgresql://postgres@127.0.0.1:5433/postgres\" -tAc \"SELECT count(*) FROM information_schema.tables WHERE table_schema='public' AND table_name NOT LIKE 'alembic%'\")",
+      "Shell(cd /home/mahbub/Projects/launchpad/backend && export DATABASE_URL=\"postgresql+psycopg2://postgres@127.0.0.1:5433/postgres\" && export PYTHONPATH=\"$(pwd)\" && echo \"=== CURRENT ===\" && .venv/bin/alembic current 2>&1 | tail -3 && echo \"=== CHECK (drift) ===\" && .venv/bin/alembic check 2>&1 | tail -15)",
+      "Shell(.venv/bin/black:*)",
+      "Shell(.venv/bin/isort:*)",
+      "Shell(.venv/bin/ruff:*)",
+      "Shell(.venv/bin/alembic:*)",
+      "Shell(cd /home/mahbub/Projects/launchpad/backend && rm -f alembic/versions/5ce38f8a3062_initial_schema.py && PYTHONPATH=\"$(pwd)\" DATABASE_URL=\"postgresql+psycopg2://postgres@127.0.0.1:5433/postgres\" .venv/bin/alembic revision --autogenerate -m \"initial schema\" 2>&1 | tail -6)",
+      "Shell(cd /home/mahbub/Projects/launchpad/backend && rm -f alembic/versions/5166f53f6849_initial_schema.py && PYTHONPATH=\"$(pwd)\" DATABASE_URL=\"postgresql+psycopg2://postgres@127.0.0.1:5433/postgres\" .venv/bin/alembic revision --autogenerate -m \"initial schema\" 2>&1 | tail -3)",
+      "Shell(cd /home/mahbub/Projects/launchpad/backend && export DATABASE_URL=\"postgresql+psycopg2://postgres@127.0.0.1:5433/postgres\" && export PYTHONPATH=\"$(pwd)\" && echo \"=== UP ===\" && .venv/bin/alembic upgrade head 2>&1 | tail -2 && echo \"=== DOWN ===\" && .venv/bin/alembic downgrade base 2>&1 | tail -1 && echo \"=== UP AGAIN ===\" && .venv/bin/alembic upgrade head 2>&1 | tail -2 && echo \"=== DRIFT ===\" && .venv/bin/alembic check 2>&1 | tail -2)",
+      "Shell(cd:*)"
+    ],
+    "deny": [],
+    "defaultMode": "default"
+  }
+}
