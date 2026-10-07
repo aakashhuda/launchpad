@@ -1,0 +1,21 @@
+[project]
+name = "launchpad-backend"
+version = "0.1.0"
+description = "Launchpad backend service"
+requires-python = "==3.10.12"
+
+[tool.black]
+line-length = 100
+target-version = ["py310"]
+
+[tool.isort]
+profile = "black"
+line_length = 100
+
+[tool.ruff]
+line-length = 100
+target-version = "py310"
+
+[tool.pytest.ini_options]
+pythonpath = ["app"]
+testpaths = ["tests"]

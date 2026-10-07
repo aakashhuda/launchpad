@@ -1,0 +1,41 @@
+import os
+from functools import lru_cache
+
+from pydantic_settings import BaseSettings, SettingsConfigDict
+
+
+def resolve_env_file() -> str:
+    env_file = os.getenv("ENV_FILE")
+    if env_file:
+        return env_file
+
+    app_env = os.getenv("APP_ENV", "development").lower()
+    if app_env == "production":
+        return ".env.production"
+    return ".env.development"
+
+
+class Settings(BaseSettings):
+    model_config = SettingsConfigDict(
+        env_file=resolve_env_file(),
+        env_file_encoding="utf-8",
+        extra="ignore",
+    )
+
+    app_name: str = "Launchpad Backend"
+    app_env: str = "development"
+    debug: bool = True
+    secret_key: str
+    database_url: str
+    redis_url: str
+    jwt_algorithm: str = "HS256"
+    access_token_expire_min: int = 30
+    refresh_token_expire_days: int = 7
+
+
+@lru_cache
+def get_settings() -> Settings:
+    return Settings()
+
+
+settings = get_settings()
