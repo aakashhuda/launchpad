@@ -249,7 +249,7 @@ erDiagram
     }
 ```
 
-The authoritative schema is defined in the SQLAlchemy models under `backend/app/db/models/` and the Alembic migration under `backend/alembic/versions/`.
+The authoritative schema is defined in the SQLAlchemy models under `backend/src/<domain>/models.py` and the Alembic migration under `backend/alembic/versions/`.
 
 ---
 

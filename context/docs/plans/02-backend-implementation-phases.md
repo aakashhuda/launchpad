@@ -8,7 +8,7 @@ A phase-by-phase execution guide for the Launchpad backend, aligned with our mod
 
 - Translate client brief rules into concrete PostgreSQL schema design.
 - Establish first stable Alembic migration baseline.
-- Preserve modular boundaries (`app/modules/*`) while defining shared core entities.
+- Preserve modular boundaries (`src/<domain>/*`) while defining shared core entities.
 
 ### Scope
 
@@ -23,7 +23,7 @@ A phase-by-phase execution guide for the Launchpad backend, aligned with our mod
 
 ### Deliverables
 
-- SQLAlchemy models in `backend/app/db/models/`.
+- SQLAlchemy models in `backend/src/<domain>/models.py`.
 - Initial migration series in `backend/alembic/versions/`.
 - Entity conventions doc update in `context/` if needed.
 
@@ -44,19 +44,19 @@ A phase-by-phase execution guide for the Launchpad backend, aligned with our mod
 
 ### Scope
 
-- Module completion for `app/modules/auth` and identity dependencies.
+- Module completion for `src/auth` and identity dependencies.
 - Implement:
   - email/password signup/login
   - JWT access/refresh issuance and refresh flow
   - email verification workflow
   - forgot/reset/change password
   - Google sign-in integration seam
-- Role and ownership guards in `app/api/deps.py` and service-level checks.
+- Role and ownership guards in `src/core/dependencies.py` and service-level checks.
 
 ### Deliverables
 
 - Auth routes, schemas, services.
-- Security utilities hardened in `app/core/security.py`.
+- Security utilities hardened in `src/core/security.py`.
 - Token/session revocation strategy (blacklist or rotation policy) documented.
 
 ### Exit Criteria
@@ -169,7 +169,7 @@ A phase-by-phase execution guide for the Launchpad backend, aligned with our mod
 
 ### Deliverables
 
-- Background execution integration from `app/tasks/*` abstraction.
+- Background execution integration from `src/tasks/*` abstraction. Keep the task infrastructure (queue/executor/retry/scheduler) centralized in `src/tasks/`; define concrete jobs in the owning domain's `jobs.py` (e.g. `src/notifications/jobs.py`, `src/products/jobs.py`) and enqueue by string name to avoid cross-domain imports.
 - Email/in-app notification pipelines and status tracking.
 - Retry/backoff/failure visibility instrumentation.
 

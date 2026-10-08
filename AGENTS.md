@@ -14,7 +14,7 @@ Read the following to get the full context of the project:
 
 ## Commands
 
-- **Backend dev server**: `cd backend && uvicorn app.main:app --reload --host 0.0.0.0 --port 8000`
+- **Backend dev server**: `cd backend && uvicorn src.main:app --reload --host 0.0.0.0 --port 8000`
 - **Backend tests**: `cd backend && python3 -m pytest`
 - **Backend lint**: `cd backend && python3 -m ruff check .`
 - **Backend format**: `cd backend && python3 -m black .`

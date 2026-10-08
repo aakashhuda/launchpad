@@ -24,7 +24,7 @@
 ## SQLAlchemy / Alembic
 
 - Use SQLAlchemy ORM with explicit session handling.
-- Keep model definitions in `app/db/models` and avoid query logic inside routes.
+- Keep model definitions in `src/<domain>/models.py` and avoid query logic inside routes.
 - All schema changes must be migration-driven with Alembic.
 - Never edit existing applied migrations; create new forward migrations.
 
@@ -37,13 +37,18 @@
 
 ## File Organization
 
-- `app/api` for API transport concerns.
-- `app/web` for template-rendered pages.
-- `app/modules/*` for feature logic and module routers.
-- `app/core` for config, security, logging, constants, and global handlers.
-- `app/db` for DB base/session/models.
-- `app/integrations` for external systems (Redis, email, etc.).
-- `app/tasks` for background task abstractions and jobs.
+- `src/core` for config, database, security, logging, constants, and shared dependencies.
+- `src/shared` for cross-cutting base models and global exception handlers.
+- `src/<domain>/*` for feature logic: each domain owns `router.py`, `service.py`, `crud.py`, `models.py`, `schemas.py`, and its concrete `jobs.py`.
+- `src/integrations` for external systems (Redis, email, etc.).
+- `src/tasks` for background task infrastructure only (queue/executor abstraction, retry/backoff, scheduler, dispatch registry). Concrete job definitions live in the owning domain's `jobs.py`, not here.
+- `src/web` for template-rendered pages.
+
+## Background Tasks
+
+- Keep the task *infrastructure* (queue adapter, executor, retry policy, scheduler, dispatch registry) centralized in `src/tasks/`.
+- Define *concrete jobs* inside the domain that owns the business logic, e.g. `src/notifications/jobs.py`, `src/products/jobs.py`.
+- Domains enqueue jobs by **string name** via `src/tasks/scheduler.py` (e.g. `enqueue("notifications.send_daily_digest", payload)`); the executor resolves names to domain job functions at runtime. This avoids cross-domain imports and preserves directional dependency rules.
 
 ## Naming
 

@@ -20,7 +20,7 @@ cp .env.example .env.development
 4. Run development server:
 
 ```bash
-uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
+uvicorn src.main:app --reload --host 0.0.0.0 --port 8000
 ```
 
 ## Migrations

@@ -2,10 +2,15 @@ from logging.config import fileConfig
 
 from sqlalchemy import engine_from_config, pool
 
+import src.community.models  # noqa: F401
+import src.notifications.models  # noqa: F401
+import src.products.models  # noqa: F401
+import src.staff.models  # noqa: F401
+import src.topics.models  # noqa: F401
+import src.users.models  # noqa: F401
 from alembic import context
-from app.core.config import settings
-from app.db import models  # noqa: F401  (ensure all models are registered)
-from app.db import Base
+from src.core.config import settings
+from src.shared.base_model import Base
 
 config = context.config
 
