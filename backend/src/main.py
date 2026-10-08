@@ -10,6 +10,7 @@ from src.core.constants import API_V1_PREFIX
 from src.core.logging import configure_logging
 from src.notifications.router import router as notifications_router
 from src.products.router import router as products_router
+from src.shared import registry  # noqa: F401  (load all mappers)
 from src.shared.exceptions import register_exception_handlers
 from src.staff.router import router as staff_router
 from src.topics.router import router as topics_router

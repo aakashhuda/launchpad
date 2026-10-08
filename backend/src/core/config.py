@@ -31,6 +31,9 @@ class Settings(BaseSettings):
     jwt_algorithm: str = "HS256"
     access_token_expire_min: int = 30
     refresh_token_expire_days: int = 7
+    email_verification_expire_hours: int = 24
+    password_reset_expire_hours: int = 1
+    google_client_id: str | None = None
 
 
 @lru_cache
