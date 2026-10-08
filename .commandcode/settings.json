@@ -36,7 +36,16 @@
       "Shell(cd /home/mahbub/Projects/launchpad/backend && rm -f alembic/versions/5166f53f6849_initial_schema.py && PYTHONPATH=\"$(pwd)\" DATABASE_URL=\"postgresql+psycopg2://postgres@127.0.0.1:5433/postgres\" .venv/bin/alembic revision --autogenerate -m \"initial schema\" 2>&1 | tail -3)",
       "Shell(cd /home/mahbub/Projects/launchpad/backend && export DATABASE_URL=\"postgresql+psycopg2://postgres@127.0.0.1:5433/postgres\" && export PYTHONPATH=\"$(pwd)\" && echo \"=== UP ===\" && .venv/bin/alembic upgrade head 2>&1 | tail -2 && echo \"=== DOWN ===\" && .venv/bin/alembic downgrade base 2>&1 | tail -1 && echo \"=== UP AGAIN ===\" && .venv/bin/alembic upgrade head 2>&1 | tail -2 && echo \"=== DRIFT ===\" && .venv/bin/alembic check 2>&1 | tail -2)",
       "Shell(cd:*)",
-      "Shell(cd /home/mahbub/Projects/launchpad && echo \"=== stray brace dirs contents ===\" && find 'backend/app/{api' -type f 2>/dev/null; find 'backend/app/{api/v1,web,core,db/{models,repositories},modules/{auth,users,products,notifications},integrations,tasks/jobs,templates,static/{css,js,images}}' -type f 2>/dev/null; echo \"(end — empty means no files)\" && echo \"=== backend README ===\" && cat backend/README.md 2>/dev/null)"
+      "Shell(cd /home/mahbub/Projects/launchpad && echo \"=== stray brace dirs contents ===\" && find 'backend/app/{api' -type f 2>/dev/null; find 'backend/app/{api/v1,web,core,db/{models,repositories},modules/{auth,users,products,notifications},integrations,tasks/jobs,templates,static/{css,js,images}}' -type f 2>/dev/null; echo \"(end — empty means no files)\" && echo \"=== backend README ===\" && cat backend/README.md 2>/dev/null)",
+      "Shell(for:*)",
+      "Shell(do:*)",
+      "Shell(done:*)",
+      "Shell( git:*)",
+      "Shell( for:*)",
+      "Shell(grep:*)",
+      "Shell( rm:*)",
+      "Shell(cd /home/mahbub/Projects/launchpad/backend && find app/static -type f 2>/dev/null; echo \"---tracked in app---\"; git ls-files app/static app/tasks/jobs app/main.py 2>/dev/null)",
+      "Shell(rmdir:*)"
     ],
     "deny": [],
     "defaultMode": "default"
