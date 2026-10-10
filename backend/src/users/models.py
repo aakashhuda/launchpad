@@ -83,7 +83,7 @@ class User(TimestampMixin, Base):
         Boolean, nullable=False, default=False, server_default=false()
     )
 
-    profile: Mapped[Profile] = relationship(back_populates="user", uselist=False)
+    profiles: Mapped[list[Profile]] = relationship(back_populates="user", order_by="Profile.id")
 
     __table_args__ = (
         CheckConstraint(
@@ -120,15 +120,13 @@ class Profile(TimestampMixin, Base):
     profile_uuid: Mapped[uuid.UUID] = mapped_column(
         Uuid, unique=True, nullable=False, default=uuid.uuid4
     )
-    user_id: Mapped[int] = mapped_column(
-        ForeignKey("users.id", ondelete="CASCADE"), unique=True, nullable=False
-    )
+    user_id: Mapped[int] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
     nick_name: Mapped[str | None] = mapped_column(String(100))
     role_id: Mapped[int] = mapped_column(ForeignKey("roles.id"), nullable=False)
     public_profile_url: Mapped[str] = mapped_column(String(255), nullable=False)
     slug: Mapped[str] = mapped_column(String(50), unique=True, nullable=False)
 
-    user: Mapped[User] = relationship(back_populates="profile")
+    user: Mapped[User] = relationship(back_populates="profiles")
     role: Mapped[Role] = relationship(back_populates="profiles")
 
     products: Mapped[list[Product]] = relationship(back_populates="profile")
