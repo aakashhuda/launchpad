@@ -82,14 +82,14 @@ def test_users_me_returns_current_user(client):
     body = resp.json()
     assert body["email"] == email
     assert "password_hash" not in body
-    assert body["profile"]["role"]["slug"] == "member"
+    assert body["profiles"][0]["role"]["slug"] == "member"
 
 
 def test_profile_by_slug(client):
     email = _unique_email()
     tokens = _signup(client, email=email).json()
     me = client.get("/api/v1/users/me", headers=_bearer(tokens["access_token"])).json()
-    slug = me["profile"]["slug"]
+    slug = me["profiles"][0]["slug"]
     resp = client.get(f"/api/v1/users/{slug}")
     assert resp.status_code == 200
     assert resp.json()["slug"] == slug
@@ -257,7 +257,7 @@ def test_require_role_blocks_member_from_admin(client, db_session):
 
     tokens = _signup(client).json()
     me = client.get("/api/v1/users/me", headers=_bearer(tokens["access_token"])).json()
-    user = users_service.get_user_by_id(db_session, me["id"])
+    user = users_service.UserService(db_session).get_by_id(me["id"])
 
     with pytest.raises(HTTPException) as exc:
         require_role("admin")(current_user=user)
@@ -270,7 +270,7 @@ def test_require_role_allows_matching_role(client, db_session):
 
     tokens = _signup(client).json()
     me = client.get("/api/v1/users/me", headers=_bearer(tokens["access_token"])).json()
-    user = users_service.get_user_by_id(db_session, me["id"])
+    user = users_service.UserService(db_session).get_by_id(me["id"])
 
     assert require_role("member")(current_user=user) is user
 
@@ -282,7 +282,7 @@ def test_signup_retries_on_slug_collision(client, db_session, monkeypatch):
     first_email = _unique_email()
     first_tokens = _signup(client, email=first_email, nick_name="colliding-slug").json()
     first_me = client.get("/api/v1/users/me", headers=_bearer(first_tokens["access_token"])).json()
-    occupied_slug = first_me["profile"]["slug"]
+    occupied_slug = first_me["profiles"][0]["slug"]
 
     real_gen = users_crud.generate_unique_slug
     attempts = {"n": 0}
@@ -298,3 +298,84 @@ def test_signup_retries_on_slug_collision(client, db_session, monkeypatch):
     resp = _signup(client, nick_name="colliding-slug")
     assert resp.status_code == 201, resp.text
     assert attempts["n"] >= 2  # retried after the collision
+
+
+def _profile_roles(client, access_token) -> set[str]:
+    me = client.get("/api/v1/users/me", headers=_bearer(access_token)).json()
+    return {p["role"]["slug"] for p in me["profiles"]}
+
+
+def test_signup_as_founder_creates_founder_profile(client):
+    resp = _signup(client, role="founder")
+    assert resp.status_code == 201
+    assert _profile_roles(client, resp.json()["access_token"]) == {"founder"}
+
+
+def test_signup_rejects_non_self_serve_role(client):
+    resp = _signup(client, role="admin")
+    assert resp.status_code == 422
+
+
+def test_signup_rejects_invalid_email(client):
+    assert _signup(client, email="not-an-email").status_code == 422
+
+
+def test_signup_rejects_malformed_phone(client):
+    assert _signup(client, phone_number="abc").status_code == 422
+
+
+def test_signup_rejects_duplicate_phone(client):
+    phone = "+15551234567"
+    assert _signup(client, phone_number=phone).status_code == 201
+    resp = _signup(client, phone_number=phone)
+    assert resp.status_code == 409
+
+
+def test_signup_existing_member_adds_founder_after_confirmation(client):
+    email = _unique_email()
+    assert _signup(client, email=email, role="member").status_code == 201
+
+    conflict = _signup(client, email=email, role="founder")
+    assert conflict.status_code == 409
+    assert "confirm" in conflict.json()["detail"].lower()
+
+    confirmed = _signup(client, email=email, role="founder", confirm_add_profile=True)
+    assert confirmed.status_code == 201
+    assert _profile_roles(client, confirmed.json()["access_token"]) == {"member", "founder"}
+
+
+def test_signup_existing_founder_adds_member_after_confirmation(client):
+    email = _unique_email()
+    assert _signup(client, email=email, role="founder").status_code == 201
+    confirmed = _signup(client, email=email, role="member", confirm_add_profile=True)
+    assert confirmed.status_code == 201
+    assert _profile_roles(client, confirmed.json()["access_token"]) == {"member", "founder"}
+
+
+def test_signup_same_role_twice_is_rejected(client):
+    email = _unique_email()
+    assert _signup(client, email=email, role="member").status_code == 201
+    resp = _signup(client, email=email, role="member", confirm_add_profile=True)
+    assert resp.status_code == 409
+    assert "already have" in resp.json()["detail"].lower()
+
+
+def test_signup_existing_email_wrong_password_rejected(client):
+    email = _unique_email()
+    assert _signup(client, email=email, role="member").status_code == 201
+    resp = _signup(client, email=email, password="different123", role="founder")
+    assert resp.status_code == 401
+
+
+def test_require_role_allows_any_matching_profile(client, db_session):
+    from src.core.dependencies import require_role
+    from src.users import service as users_service
+
+    email = _unique_email()
+    _signup(client, email=email, role="member")
+    confirmed = _signup(client, email=email, role="founder", confirm_add_profile=True).json()
+    user = users_service.UserService(db_session).get_by_id(
+        client.get("/api/v1/users/me", headers=_bearer(confirmed["access_token"])).json()["id"]
+    )
+    assert require_role("founder")(current_user=user) is user
+    assert require_role("member", "founder")(current_user=user) is user
