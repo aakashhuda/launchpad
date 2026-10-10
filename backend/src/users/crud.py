@@ -6,7 +6,7 @@ import secrets
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from src.users.models import AuthProvider, Profile, Role, User
+from src.users.models import AuthProvider, MemberFollow, Profile, Role, User
 
 # Slug sanitization
 _SLUG_PATTERN = re.compile(r"[^a-z0-9]+")
@@ -40,6 +40,10 @@ def get_user_by_email(db: Session, email: str) -> User | None:
     return db.scalar(select(User).where(User.email == email))
 
 
+def get_user_by_phone(db: Session, phone_number: str) -> User | None:
+    return db.scalar(select(User).where(User.phone_number == phone_number))
+
+
 def get_user_by_id(db: Session, user_id: int) -> User | None:
     return db.scalar(select(User).where(User.id == user_id))
 
@@ -50,42 +54,83 @@ def get_user_by_auth_provider(db: Session, provider: AuthProvider, provider_id: 
     )
 
 
-def get_profile_by_slug(db: Session, slug: str) -> Profile | None:
-    return db.scalar(select(Profile).where(Profile.slug == slug))
-
-
-def create_user_with_profile(
+def create_user(
     db: Session,
     *,
     email: str,
     password_hash: str | None,
     first_name: str,
     last_name: str,
+    phone_number: str | None,
     auth_provider: AuthProvider,
     auth_provider_id: str | None,
-    nick_name: str | None,
-    role: Role,
-    slug: str,
 ) -> User:
     user = User(
         email=email,
         password_hash=password_hash,
         first_name=first_name,
         last_name=last_name,
+        phone_number=phone_number,
         auth_provider=auth_provider,
         auth_provider_id=auth_provider_id,
     )
     db.add(user)
-    db.flush()  # populate user.id
+    db.flush()
+    return user
 
+
+def get_profile_by_slug(db: Session, slug: str) -> Profile | None:
+    return db.scalar(select(Profile).where(Profile.slug == slug))
+
+
+def get_profile_by_user_and_role(db: Session, user_id: int, role_id: int) -> Profile | None:
+    return db.scalar(select(Profile).where(Profile.user_id == user_id, Profile.role_id == role_id))
+
+
+def list_profiles_by_user(db: Session, user_id: int) -> list[Profile]:
+    return list(db.scalars(select(Profile).where(Profile.user_id == user_id).order_by(Profile.id)))
+
+
+def create_profile(
+    db: Session, *, user: User, role_id: int, nick_name: str | None, slug: str
+) -> Profile:
     profile = Profile(
-        user_id=user.id,
-        role_id=role.id,
+        user=user,
+        role_id=role_id,
         nick_name=nick_name,
         slug=slug,
         public_profile_url=f"/users/{slug}",
     )
     db.add(profile)
     db.flush()
-    user.profile = profile
-    return user
+    return profile
+
+
+def get_member_follow(
+    db: Session, follower_profile_id: int, followed_profile_id: int
+) -> MemberFollow | None:
+    return db.scalar(
+        select(MemberFollow).where(
+            MemberFollow.follower_profile_id == follower_profile_id,
+            MemberFollow.followed_profile_id == followed_profile_id,
+        )
+    )
+
+
+def create_member_follow(
+    db: Session, follower_profile_id: int, followed_profile_id: int
+) -> MemberFollow:
+    follow = MemberFollow(
+        follower_profile_id=follower_profile_id,
+        followed_profile_id=followed_profile_id,
+    )
+    db.add(follow)
+    db.flush()
+    return follow
+
+
+def delete_member_follow(db: Session, follower_profile_id: int, followed_profile_id: int) -> None:
+    follow = get_member_follow(db, follower_profile_id, followed_profile_id)
+    if follow is not None:
+        db.delete(follow)
+        db.flush()
