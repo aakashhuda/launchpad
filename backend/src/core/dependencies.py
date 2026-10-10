@@ -6,8 +6,8 @@ from sqlalchemy.orm import Session
 
 from src.core.database import get_db
 from src.core.security import TokenType, decode_token_of_type
-from src.users import service as users_service
 from src.users.models import User
+from src.users.service import UserService
 
 bearer_scheme = HTTPBearer(auto_error=False)
 
@@ -35,7 +35,7 @@ def get_current_user(
             detail="Invalid access token subject",
         )
 
-    user = users_service.get_user_by_id(db, user_id)
+    user = UserService(db).get_by_id(user_id)
     if user is None:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
@@ -55,10 +55,10 @@ def require_verified_email(current_user: User = Depends(get_current_user)) -> Us
 
 def require_role(*slugs: str):
     def _dependency(current_user: User = Depends(get_current_user)) -> User:
-        role_slug = None
-        if current_user.profile is not None and current_user.profile.role is not None:
-            role_slug = current_user.profile.role.slug
-        if role_slug not in slugs:
+        user_roles = {
+            profile.role.slug for profile in current_user.profiles if profile.role is not None
+        }
+        if user_roles.isdisjoint(slugs):
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
                 detail="Insufficient role",
