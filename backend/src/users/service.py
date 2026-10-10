@@ -6,12 +6,7 @@ from sqlalchemy.orm import Session
 
 from src.users import crud
 from src.users.models import AuthProvider, MemberFollow, Profile, Role, User
-from src.users.schemas import (
-    ProfileCreate,
-    ProfileRead,
-    UserCreate,
-    UserWithProfilesRead,
-)
+from src.users.schemas import ProfileCreate, ProfileRead, UserCreate, UserWithProfilesRead
 
 _MAX_SLUG_RETRIES = 3
 

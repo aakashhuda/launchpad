@@ -44,6 +44,23 @@ def get_current_user(
     return user
 
 
+def get_optional_current_user(
+    credentials: HTTPAuthorizationCredentials | None = Depends(bearer_scheme),
+    db: Session = Depends(get_db),
+) -> User | None:
+    """Best-effort auth: returns the user when a valid access token is present, else None."""
+    if credentials is None or not credentials.credentials:
+        return None
+    claims = decode_token_of_type(credentials.credentials, TokenType.ACCESS)
+    if claims is None:
+        return None
+    try:
+        user_id = int(claims["sub"])
+    except (KeyError, ValueError):
+        return None
+    return UserService(db).get_by_id(user_id)
+
+
 def require_verified_email(current_user: User = Depends(get_current_user)) -> User:
     if not current_user.email_verified:
         raise HTTPException(
@@ -64,6 +81,25 @@ def require_role(*slugs: str):
                 detail="Insufficient role",
             )
         return current_user
+
+    return _dependency
+
+
+def require_verified_role(*slugs: str):
+    """Role guard for member actions that additionally requires a confirmed email.
+
+    Visitors (anonymous) are unaffected because they never reach a role-guarded
+    route; every authenticated actor other than a visitor must be verified.
+    """
+    check_role = require_role(*slugs)
+
+    def _dependency(current_user: User = Depends(get_current_user)) -> User:
+        if not current_user.email_verified:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Email verification required",
+            )
+        return check_role(current_user)
 
     return _dependency
 

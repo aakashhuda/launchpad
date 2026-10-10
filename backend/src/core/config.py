@@ -34,6 +34,7 @@ class Settings(BaseSettings):
     email_verification_expire_hours: int = 24
     password_reset_expire_hours: int = 1
     google_client_id: str | None = None
+    max_launches_per_founder_per_day: int = 2
 
 
 @lru_cache
