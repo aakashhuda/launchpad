@@ -18,8 +18,15 @@
 
 - Use Pydantic schemas for all request/response contracts.
 - Keep API schemas separate from persistence models.
-- Validate input at route boundary and keep services working with typed objects.
+- Split schemas per operation for each entity: `<Entity>Create` (write input),
+  `<Entity>Update` (partial write input), and `<Entity>Read` (output
+  projection). Action-specific DTOs (`<Action>Request` / `<Action>Response`) are
+  fine for non-CRUD flows such as login or password reset.
+- Put validation (format, ranges, allowed values) in the schemas; services
+  receive already-validated, typed objects.
 - Centralize environment settings in a `BaseSettings`-based config module.
+  `pydantic-settings` maps field names to env vars case-insensitively
+  (`secret_key` <- `SECRET_KEY`), so no explicit env lookups are needed.
 
 ## SQLAlchemy / Alembic
 
@@ -43,6 +50,20 @@
 - `src/integrations` for external systems (Redis, email, etc.).
 - `src/tasks` for background task infrastructure only (queue/executor abstraction, retry/backoff, scheduler, dispatch registry). Concrete job definitions live in the owning domain's `jobs.py`, not here.
 - `src/web` for template-rendered pages.
+
+## Services
+
+- Each `service.py` exposes one class per model (`<Model>Service`) instead of
+  module-level functions, e.g. `UserService`, `RoleService`, `ProfileService`,
+  `MemberFollowService` in `src/users/service.py`.
+- Construct services with the request's DB `Session` (`UserService(db)`).
+  Routers instantiate the service and delegate to it; raw queries stay in
+  `crud.py`.
+- A service may compose sibling services (e.g. `AuthService` uses `UserService`
+  and `ProfileService`) and owns the transaction boundary (`commit`) for its use
+  case.
+- Keep model-specific business rules in that model's service; keep pure data
+  access in `crud.py`.
 
 ## Background Tasks
 

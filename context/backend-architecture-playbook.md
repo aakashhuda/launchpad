@@ -87,6 +87,10 @@ Rule: Transport should not contain business logic; infrastructure should not dic
 ## 12) Modular Growth Guidelines
 
 - Add new features as modules with dedicated router/service/schema structure.
+- Expose one `<Model>Service` class per model (constructed with the request
+  `Session`); keep business rules in the service and raw queries in `crud.py`.
+- Split request/response contracts into `<Entity>Create` / `<Entity>Update` /
+  `<Entity>Read` schemas, with validation living in the schemas.
 - Minimize cross-module coupling; prefer shared abstractions in controlled core packages.
 - Split into services only when scaling/ownership boundaries require it and data seams are stable.
 

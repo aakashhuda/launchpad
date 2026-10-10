@@ -34,7 +34,7 @@ Without moderation, anti-abuse rules, and quality ranking, product discovery bec
 
 ## ✨ Core Features
 
-### A) Accounts & Authentication
+### A) Profiles & Authentication
 
 - Email/password signup/login
 - Google sign-in
@@ -93,7 +93,7 @@ Core entities:
 
 ```mermaid
 erDiagram
-    USERS ||--o| PROFILES : "has"
+    USERS ||--o{ PROFILES : "has"
     ROLES ||--o{ PROFILES : "grants"
 
     PROFILES ||--o{ PRODUCTS : "founds"
@@ -276,26 +276,27 @@ backend/
 │   ├── versions/           # numbered migrations
 │   ├── env.py              # migration runtime config
 │   └── script.py.mako      # migration file template
-├── app/
-│   ├── api/                # API transport (v1 routers, deps)
-│   ├── core/               # config, security, logging, constants
-│   ├── db/
-│   │   ├── models/         # SQLAlchemy models + domain enums
-│   │   ├── repositories/   # data-access layer
-│   │   ├── base.py         # declarative base + timestamp mixins
-│   │   └── session.py      # engine + session factory
+├── scripts/                # operational scripts (e.g. seed_roles.sql)
+├── src/
+│   ├── main.py             # FastAPI app factory
+│   ├── core/               # config, database, security, logging, constants, deps
+│   ├── shared/             # Base + mixins, global exception handlers, model registry
+│   ├── users/              # User, Role, Profile, MemberFollow
+│   ├── products/           # Product, ProductTopic, ProductLaunch, Submission
+│   ├── community/          # Vote, Comment, Report
+│   ├── topics/             # Topic, TopicFollow
+│   ├── notifications/      # Notification, NotificationPreference, NotificationDelivery
+│   ├── staff/              # StaffAction, AuditLog
+│   ├── auth/               # auth router / service / schemas (uses users)
 │   ├── integrations/       # Redis, email, external systems
-│   ├── modules/            # feature logic (auth, users, products, notifications)
-│   ├── tasks/              # background job abstraction
+│   ├── tasks/              # background task infrastructure
 │   ├── templates/          # SSR templates
-│   ├── web/                # SSR web routes
 │   ├── static/             # static assets (css/js/images)
-│   └── main.py             # FastAPI app factory
+│   └── web/                # SSR web routes
 ├── requirements/           # base.txt / dev.txt / prod.txt
-├── scripts/                # operational scripts
 ├── tests/
-│   ├── unit/
-│   └── integration/
+│   ├── conftest.py
+│   └── test_*.py
 ├── alembic.ini
 ├── pyproject.toml
 ├── .env.example
@@ -303,6 +304,10 @@ backend/
 
 frontend/                   # reserved for the future frontend app
 ```
+
+Each domain module under `src/<domain>/` owns `router.py`, `service.py`,
+`crud.py`, `models.py`, and `schemas.py`. Services expose per-model
+`<Model>Service` classes; see `context/coding-standards.md`.
 
 ---
 

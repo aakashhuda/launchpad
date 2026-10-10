@@ -1,4 +1,4 @@
-# Phase 2 — Authentication, Authorization & Account Lifecycle
+# Phase 2 — Authentication, Authorization & Profile Lifecycle
 
 ## Overview
 

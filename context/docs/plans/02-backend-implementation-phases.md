@@ -35,7 +35,7 @@ A phase-by-phase execution guide for the Launchpad backend, aligned with our mod
 
 ---
 
-## Phase 2 — Authentication, Authorization & Account Lifecycle
+## Phase 2 — Authentication, Authorization & Profile Lifecycle
 
 ### Objectives
 
