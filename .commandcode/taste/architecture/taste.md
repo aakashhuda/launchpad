@@ -1,6 +1,8 @@
 # Architecture
 
-- Prefers domain-driven modular monolith architecture for FastAPI backends: each feature/domain owns its own `router.py`, `service.py`, `crud.py`, `models.py`, and `schemas.py`, with clear separation between business logic (service) and data access (crud). Confidence: 0.8
+- Prefers domain-driven modular monolith architecture for FastAPI backends: each feature/domain owns its own `router.py`, `service.py`, `crud.py`, `models.py`, and `schemas.py`, with clear separation between business logic (service) and data access (crud). Confidence: 0.85
+- When a module needs data or operations from another domain, it must route through that domain's `service` layer, not bypass to `crud` directly — `service` is the public API, `crud` is internal data access. Confidence: 0.8
+- Prefers race-safe handling for TOCTOU-prone DB writes: wrap inserts in savepoints (`db.begin_nested()`), catch `IntegrityError`, distinguish collision types (retry with fresh value vs. surface conflict error), and retry up to a bounded limit rather than letting concurrent unique-constraint violations surface as 500s. Confidence: 0.7
 - Prefers `src/` as the Python package root (import paths `src.*`) over `app/` or other naming. Confidence: 0.7
 - Prefers decentralizing ORM models into per-domain `models.py` files (with inline domain enums) rather than keeping a centralized `db/models/` package. Confidence: 0.7
 - Prefers mounting domain routers directly in `main.py` with explicit `prefix` arguments rather than routing through an `api/v1/` aggregator layer. Confidence: 0.7

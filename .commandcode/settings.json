@@ -45,7 +45,9 @@
       "Shell(grep:*)",
       "Shell( rm:*)",
       "Shell(cd /home/mahbub/Projects/launchpad/backend && find app/static -type f 2>/dev/null; echo \"---tracked in app---\"; git ls-files app/static app/tasks/jobs app/main.py 2>/dev/null)",
-      "Shell(rmdir:*)"
+      "Shell(rmdir:*)",
+      "Shell(cd /home/mahbub/Projects/launchpad && echo \"=== context/features/ ===\" && ls -1 context/features/ 2>&1; echo \"=== context/docs/features/ ===\" && ls -1 context/docs/features/ 2>&1; echo \"=== current-feature.md (head) ===\" && head -5 context/current-feature.md 2>&1)",
+      "Shell(sed:*)"
     ],
     "deny": [],
     "defaultMode": "default"
