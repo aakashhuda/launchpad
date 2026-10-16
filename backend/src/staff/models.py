@@ -21,12 +21,16 @@ class StaffActionType(str, enum.Enum):
     SCHEDULE_LAUNCH = "schedule_launch"
     RESCHEDULE_LAUNCH = "reschedule_launch"
     ACTIVATE_LAUNCH = "activate_launch"
+    ASSIGN_REPORT = "assign_report"
+    RESOLVE_REPORT = "resolve_report"
+    DISMISS_REPORT = "dismiss_report"
 
 
 class StaffTargetType(str, enum.Enum):
     PRODUCT = "product"
     SUBMISSION = "submission"
     LAUNCH = "launch"
+    REPORT = "report"
 
 
 class AuditEventType(str, enum.Enum):
@@ -39,12 +43,17 @@ class AuditEventType(str, enum.Enum):
     LAUNCH_SCHEDULED = "launch.scheduled"
     LAUNCH_RESCHEDULED = "launch.rescheduled"
     LAUNCH_ACTIVATED = "launch.activated"
+    REPORT_CREATED = "report.created"
+    REPORT_ASSIGNED = "report.assigned"
+    REPORT_RESOLVED = "report.resolved"
+    REPORT_DISMISSED = "report.dismissed"
 
 
 class AuditEntityType(str, enum.Enum):
     PRODUCT = "product"
     SUBMISSION = "submission"
     LAUNCH = "launch"
+    REPORT = "report"
 
 
 class StaffAction(CreatedAtMixin, Base):

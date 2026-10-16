@@ -134,3 +134,14 @@ def delete_member_follow(db: Session, follower_profile_id: int, followed_profile
     if follow is not None:
         db.delete(follow)
         db.flush()
+
+
+def list_followed_profiles(db: Session, follower_profile_id: int) -> list[Profile]:
+    return list(
+        db.scalars(
+            select(Profile)
+            .join(MemberFollow, MemberFollow.followed_profile_id == Profile.id)
+            .where(MemberFollow.follower_profile_id == follower_profile_id)
+            .order_by(MemberFollow.created_at.desc(), MemberFollow.id.desc())
+        )
+    )

@@ -120,6 +120,24 @@ class ProfileService:
     def role_slugs(self, user: User) -> set[str]:
         return {profile.role.slug for profile in user.profiles if profile.role is not None}
 
+    def profile_with_role(self, user: User, slug: str) -> Profile | None:
+        for profile in user.profiles:
+            if profile.role is not None and profile.role.slug == slug:
+                return profile
+        return None
+
+    def member_profile(self, user: User) -> Profile | None:
+        return self.profile_with_role(user, "member")
+
+    def require_member_profile(self, user: User) -> Profile:
+        """Resolve the acting member profile, or fail if the user has none."""
+        profile = self.member_profile(user)
+        if profile is None:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN, detail="Member profile required"
+            )
+        return profile
+
     def read_by_slug(self, slug: str) -> ProfileRead | None:
         profile = self.get_by_slug(slug)
         if profile is None:
@@ -173,3 +191,24 @@ class MemberFollowService:
     def unfollow(self, follower_profile_id: int, followed_profile_id: int) -> None:
         crud.delete_member_follow(self.db, follower_profile_id, followed_profile_id)
         self.db.commit()
+
+    def list_following(self, user: User) -> list[Profile]:
+        follower = ProfileService(self.db).require_member_profile(user)
+        return crud.list_followed_profiles(self.db, follower.id)
+
+    def follow_by_slug(self, user: User, slug: str) -> Profile:
+        follower = ProfileService(self.db).require_member_profile(user)
+        target = self._require_profile(slug)
+        self.follow(follower.id, target.id)
+        return target
+
+    def unfollow_by_slug(self, user: User, slug: str) -> None:
+        follower = ProfileService(self.db).require_member_profile(user)
+        target = self._require_profile(slug)
+        self.unfollow(follower.id, target.id)
+
+    def _require_profile(self, slug: str) -> Profile:
+        profile = crud.get_profile_by_slug(self.db, slug)
+        if profile is None:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Profile not found")
+        return profile

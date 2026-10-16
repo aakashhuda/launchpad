@@ -90,7 +90,11 @@ class Comment(TimestampMixin, Base):
     parent_comment: Mapped[Comment | None] = relationship(
         back_populates="replies", remote_side="Comment.id"
     )
-    replies: Mapped[list[Comment]] = relationship(back_populates="parent_comment")
+    # passive_deletes defers to the DB's ON DELETE CASCADE so deleting a parent
+    # removes its replies instead of orphaning them (nullifying parent_comment_id).
+    replies: Mapped[list[Comment]] = relationship(
+        back_populates="parent_comment", passive_deletes=True
+    )
 
     __table_args__ = (
         Index("comments_idx_0", "product_id", "created_at"),
