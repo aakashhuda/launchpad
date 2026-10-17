@@ -24,6 +24,12 @@ class StaffActionType(str, enum.Enum):
     ASSIGN_REPORT = "assign_report"
     RESOLVE_REPORT = "resolve_report"
     DISMISS_REPORT = "dismiss_report"
+    SUSPEND_MEMBER = "suspend_member"
+    REACTIVATE_MEMBER = "reactivate_member"
+    TAKE_DOWN_PRODUCT = "take_down_product"
+    RESTORE_PRODUCT = "restore_product"
+    FEATURE_PRODUCT = "feature_product"
+    UNFEATURE_PRODUCT = "unfeature_product"
 
 
 class StaffTargetType(str, enum.Enum):
@@ -31,6 +37,7 @@ class StaffTargetType(str, enum.Enum):
     SUBMISSION = "submission"
     LAUNCH = "launch"
     REPORT = "report"
+    MEMBER = "member"
 
 
 class AuditEventType(str, enum.Enum):
@@ -48,6 +55,13 @@ class AuditEventType(str, enum.Enum):
     REPORT_RESOLVED = "report.resolved"
     REPORT_DISMISSED = "report.dismissed"
     SNAPSHOT_FROZEN = "snapshot.frozen"
+    USER_SUSPENDED = "user.suspended"
+    USER_REACTIVATED = "user.reactivated"
+    PRODUCT_TAKEN_DOWN = "product.taken_down"
+    PRODUCT_RESTORED = "product.restored"
+    PRODUCT_FEATURED = "product.featured"
+    PRODUCT_UNFEATURED = "product.unfeatured"
+    ABUSE_SIGNAL_RAISED = "abuse.signal_raised"
 
 
 class AuditEntityType(str, enum.Enum):
@@ -56,6 +70,7 @@ class AuditEntityType(str, enum.Enum):
     LAUNCH = "launch"
     REPORT = "report"
     SNAPSHOT = "snapshot"
+    USER = "user"
 
 
 class StaffAction(CreatedAtMixin, Base):

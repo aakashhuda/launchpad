@@ -5,7 +5,7 @@ from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict, Field
 
-from src.users.models import AuthProvider
+from src.users.models import AuthProvider, UserStatus
 
 
 class RoleRead(BaseModel):
@@ -60,6 +60,7 @@ class UserRead(BaseModel):
     last_name: str
     auth_provider: AuthProvider
     email_verified: bool
+    status: UserStatus
     created_at: datetime
 
 

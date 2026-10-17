@@ -1,20 +1,46 @@
-# Current Feature
+# Current Feature: Phase 7 — Staff Tools, Security Hardening & Operational Readiness
 
-<!-- Feature Name -->
+<!-- Feature Name: Phase 7 — Staff Tools, Security Hardening & Operational Readiness -->
 
 ## Status
 
 <!-- Not Started|In Progress|Completed -->
 
-Not Started
+In Progress
 
 ## Goals
 
 <!-- Goals & requirements -->
 
+- Admin capabilities (admin-only, reviewer gets 403): suspend/reactivate member, takedown/restore product, feature/unfeature product on the front page — each records a `StaffAction` + `AuditLog` with actor, reason, timestamp, and request `correlation_id`.
+- Add `User.status` (`active`/`suspended`) enum + `suspended_at`/`suspension_reason`; enforce suspension at the auth boundary so suspended tokens are rejected on protected endpoints.
+- Reuse `ProductStatus.INACTIVE` for takedown via admin-driven `PRODUCT_TRANSITIONS` extensions; update `is_publicly_visible` to hide taken-down products going forward (immutable historical snapshots stay untouched).
+- Add a `featured_products` table (with `ends_at`) + admin feature/unfeature endpoints; discovery consults a single `is_featured` read for front-page surfacing.
+- Complete audit views: `list_audit_logs` crud + `GET /staff/audit-logs` with filters; `AuditLogRead` schema.
+- Rate limiting (Redis-backed, `limits:` prefix, env-configured, fail-open, bypassable in tests) on auth, voting, reporting, and commenting endpoints → 429 + `Retry-After` on excess.
+- Suspicious-behavior monitoring hooks: threshold-crossing vote/comment/report/account-creation enqueues a `staff.evaluate_abuse_signal` job (by string name via `src/tasks`) that flags for reviewer attention — monitoring, not auto-punishment.
+- Request correlation: `CorrelationIdMiddleware` reads/generates `X-Request-Id`, stores in `request.state`, returns on response; threaded into `AuditLogService.record` so `correlation_id`/`ip_address`/`user_agent` are actually populated.
+- Structured logging replacing the `basicConfig` stub (JSON/structured formatter with correlation id on every line); harden the global exception handler (no `str(exc)` leak, preserve `HTTPException` status, log with correlation, return generic server errors).
+- Operational runbook at `context/operational-runbook.md` (deployment, incident/rollback, queue controls, backup/restore, patch cadence) + a `/health/ready` readiness check reporting DB + Redis connectivity.
+- Forward-only Alembic migration(s) for `users.status`/`suspended_at`/`suspension_reason` + `featured_products` table; enum-member additions are type-only (`native_enum=False`); never edit existing migrations.
+- Tests: suspension enforcement, takedown/restore visibility, feature `ends_at`, rate-limit 429 math + recovery, abuse-signal enqueue, correlation-id generation/reuse, exception handler no-leak + `HTTPException` pass-through.
+
 ## Notes
 
 <!-- Any extra notes -->
+
+- Spec: `@context/features/07-phase-7-staff-tools-security-hardening-operational-readiness-spec.md`
+- Tag system is unused in this project (no `context/git-conventions.md`, no phase tags). Prior-phase completion verified by artifact presence (Phases 1–6 models/services/tests; commits `97299e3`/`ab045be`).
+- Revocation strategy: suspension enforced at `get_current_user` (rejects suspended tokens). JWT blacklist explicitly out of scope this phase — flagged as a follow-up.
+- Takedown reuses `INACTIVE` (no new status); historical snapshots remain immutable (Phase 5 contract).
+- Featured slots as revenue are out of scope per the brief — this is the staff "feature on front page" capability only; no paid placement, no jobs board.
+- View-count/referrer analytics remain deferred (not tracked by any prior phase).
+- Permission-flag enforcement: seeded `Role.permissions` JSONB is dead data. Prefer keeping the slug-based `require_verified_role("admin")` convention; treat permissions as advisory unless a `require_permission(flag)` guard is clearly warranted. State the choice in implementation — do not leave flags silently unused.
+- Rate limiter is Redis-backed and non-authoritative: a limiter outage degrades to fail-open for availability. Must be bypassable in tests (env flag or dependency override) so existing suites stay non-flaky.
+- Report queue currently lives at `/community/reports` — either consolidate under `/staff/reports` or keep the split, but be consistent; reuse `ReportService`, do not duplicate the report lifecycle.
+- Structured-logging library choice left to implementation (`structlog` or a stdlib JSON `Formatter`); keep the new dependency minimal and add to `requirements/base.txt`. Correlation id is the contract tying logs ↔ audit rows ↔ error responses.
+- Expected git workflow: branch `phase-7-staff-tools-security-hardening-operational-readiness`, merge to `main`, then mark complete here.
+- `AGENTS.md` has no "five business rules" / no session/order data — that generic requirement does not apply. Invariants to preserve: snapshot immutability, least-privilege role enforcement, audit completeness, no-secrets-in-repo.
 
 ## History
 

@@ -36,6 +36,19 @@ PUBLICLY_VISIBLE_STATUSES = frozenset({ProductStatus.SCHEDULED, ProductStatus.LI
 # Once live, only the description and links remain editable.
 POST_LAUNCH_EDITABLE_FIELDS = frozenset({"description", "website_url", "screenshot_urls"})
 
+# Admin-driven governance layered on the founder lifecycle above. A takedown
+# moves any non-inactive product to INACTIVE; a restore returns it to APPROVED
+# (the founder must reschedule its launch, which was cancelled on takedown).
+ADMIN_RESTORE_STATUS = ProductStatus.APPROVED
+
+
+def can_admin_takedown(current: ProductStatus) -> bool:
+    return current != ProductStatus.INACTIVE
+
+
+def can_admin_restore(current: ProductStatus) -> bool:
+    return current == ProductStatus.INACTIVE
+
 
 def is_transition_allowed(
     transitions: dict,

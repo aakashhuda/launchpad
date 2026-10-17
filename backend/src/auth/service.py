@@ -25,7 +25,7 @@ from src.core.security import (
 )
 from src.notifications.models import NotificationEventType
 from src.notifications.service import NotificationService
-from src.users.models import AuthProvider, LastLoginRole, User
+from src.users.models import AuthProvider, LastLoginRole, User, UserStatus
 from src.users.schemas import ProfileCreate, UserCreate
 from src.users.service import ProfileService, UserService
 
@@ -292,6 +292,8 @@ class AuthService:
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid credentials"
             )
+        if user.status == UserStatus.SUSPENDED:
+            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Account suspended")
 
         user.last_login_role = self._last_login_role(user)
         tokens = self.tokens.issue(user)
@@ -333,6 +335,8 @@ class AuthService:
         user = self.users.get_by_id(user_id)
         if user is None:
             raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="User not found")
+        if user.status == UserStatus.SUSPENDED:
+            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Account suspended")
 
         # Rotate: revoke the presented token, issue a fresh pair.
         self.tokens.revoke(stored)

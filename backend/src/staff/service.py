@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from sqlalchemy.orm import Session
 
+from src.core import context as request_context
 from src.staff import crud
 from src.staff.models import (
     AuditEntityType,
@@ -72,5 +73,27 @@ class AuditLogService:
             entity_id=entity_id,
             before_state=before_state,
             after_state=after_state,
-            correlation_id=correlation_id,
+            correlation_id=correlation_id or request_context.get_correlation_id(),
+            ip_address=request_context.get_client_ip(),
+            user_agent=request_context.get_user_agent(),
+        )
+
+    def list(
+        self,
+        *,
+        event_type: AuditEventType | None = None,
+        entity_type: AuditEntityType | None = None,
+        entity_id: int | None = None,
+        actor_profile_id: int | None = None,
+        limit: int,
+        offset: int,
+    ) -> list[AuditLog]:
+        return crud.list_audit_logs(
+            self.db,
+            event_type=event_type,
+            entity_type=entity_type,
+            entity_id=entity_id,
+            actor_profile_id=actor_profile_id,
+            limit=limit,
+            offset=offset,
         )

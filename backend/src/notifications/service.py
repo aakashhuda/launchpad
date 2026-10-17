@@ -87,6 +87,14 @@ _EMAIL_CONTENT: dict[NotificationEventType, tuple[str, str]] = {
         "Your export is ready",
         "The data export for {product_name} is ready to download.",
     ),
+    NotificationEventType.USER_SUSPENDED: (
+        "Your Launchpad account was suspended",
+        "Your account has been suspended. Reason: {reason}",
+    ),
+    NotificationEventType.USER_REACTIVATED: (
+        "Your Launchpad account was reactivated",
+        "Your account suspension has been lifted. Welcome back.",
+    ),
 }
 
 

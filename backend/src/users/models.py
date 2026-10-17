@@ -2,17 +2,20 @@ from __future__ import annotations
 
 import enum
 import uuid
+from datetime import datetime
 from typing import TYPE_CHECKING
 
 from sqlalchemy import (
     Boolean,
     CheckConstraint,
+    DateTime,
     Enum,
     ForeignKey,
     Identity,
     Index,
     Integer,
     String,
+    Text,
     Uuid,
     false,
     text,
@@ -40,6 +43,11 @@ class LastLoginRole(str, enum.Enum):
     FOUNDER = "founder"
     REVIEWER = "reviewer"
     ADMIN = "admin"
+
+
+class UserStatus(str, enum.Enum):
+    ACTIVE = "active"
+    SUSPENDED = "suspended"
 
 
 class User(TimestampMixin, Base):
@@ -74,6 +82,20 @@ class User(TimestampMixin, Base):
             values_callable=enum_values,
         )
     )
+    status: Mapped[UserStatus] = mapped_column(
+        Enum(
+            UserStatus,
+            native_enum=False,
+            length=20,
+            create_constraint=False,
+            values_callable=enum_values,
+        ),
+        nullable=False,
+        default=UserStatus.ACTIVE,
+        server_default=text("'active'"),
+    )
+    suspended_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    suspension_reason: Mapped[str | None] = mapped_column(Text)
     first_name: Mapped[str] = mapped_column(String(255), nullable=False)
     last_name: Mapped[str] = mapped_column(String(255), nullable=False)
     email_verified: Mapped[bool] = mapped_column(
@@ -93,6 +115,7 @@ class User(TimestampMixin, Base):
             "last_login_role IS NULL OR last_login_role IN ('member', 'founder', 'reviewer', 'admin')",
             name="ck_users_last_login_role",
         ),
+        CheckConstraint("status IN ('active', 'suspended')", name="ck_users_status"),
         Index("users_idx_0", "id", "user_uuid", "email"),
     )
 

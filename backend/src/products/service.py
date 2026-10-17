@@ -571,3 +571,166 @@ class FounderExportService:
         path = directory / f"product-{export.product_id}-{export.export_uuid}.json"
         path.write_text(json.dumps(payload, indent=2), encoding="utf-8")
         return path
+
+
+def _admin_profile(user: User) -> Profile:
+    for profile in user.profiles:
+        if profile.role is not None and profile.role.slug == "admin":
+            return profile
+    raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Admin profile required")
+
+
+class ProductAdminService:
+    """Admin governance: take a product down or restore it (Phase 7)."""
+
+    def __init__(self, db: Session) -> None:
+        self.db = db
+        self.staff_actions = StaffActionService(db)
+        self.audit = AuditLogService(db)
+
+    def takedown(self, admin: User, product_id: int, reason: str) -> ProductDetailRead:
+        product = self._require_product(product_id)
+        if not policy.can_admin_takedown(product.status):
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT, detail="Product is already taken down"
+            )
+        actor = _admin_profile(admin)
+        before = _product_snapshot(product)
+        crud.update_product(self.db, product, status=ProductStatus.INACTIVE)
+        launch = product.product_launch
+        if launch is not None and launch.state in (LaunchState.SCHEDULED, LaunchState.LIVE):
+            crud.set_launch_state(self.db, launch, LaunchState.CANCELLED)
+        self.staff_actions.record(
+            actor_profile_id=actor.id,
+            action_type=StaffActionType.TAKE_DOWN_PRODUCT,
+            target_type=StaffTargetType.PRODUCT,
+            target_id=product.id,
+            reason=reason,
+        )
+        self.audit.record(
+            actor_profile_id=actor.id,
+            event_type=AuditEventType.PRODUCT_TAKEN_DOWN,
+            entity_type=AuditEntityType.PRODUCT,
+            entity_id=product.id,
+            before_state=before,
+            after_state=_product_snapshot(product),
+        )
+        self.db.commit()
+        self.db.refresh(product)
+        return ProductService.detail(product)
+
+    def restore(self, admin: User, product_id: int) -> ProductDetailRead:
+        product = self._require_product(product_id)
+        if not policy.can_admin_restore(product.status):
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT, detail="Product is not taken down"
+            )
+        actor = _admin_profile(admin)
+        before = _product_snapshot(product)
+        crud.update_product(self.db, product, status=policy.ADMIN_RESTORE_STATUS)
+        self.staff_actions.record(
+            actor_profile_id=actor.id,
+            action_type=StaffActionType.RESTORE_PRODUCT,
+            target_type=StaffTargetType.PRODUCT,
+            target_id=product.id,
+        )
+        self.audit.record(
+            actor_profile_id=actor.id,
+            event_type=AuditEventType.PRODUCT_RESTORED,
+            entity_type=AuditEntityType.PRODUCT,
+            entity_id=product.id,
+            before_state=before,
+            after_state=_product_snapshot(product),
+        )
+        self.db.commit()
+        self.db.refresh(product)
+        return ProductService.detail(product)
+
+    def _require_product(self, product_id: int) -> Product:
+        product = crud.get_product(self.db, product_id)
+        if product is None:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Product not found")
+        return product
+
+
+class ProductFeatureService:
+    """Admin governance: feature a publicly visible product on the front page (Phase 7)."""
+
+    def __init__(self, db: Session) -> None:
+        self.db = db
+        self.staff_actions = StaffActionService(db)
+        self.audit = AuditLogService(db)
+
+    def feature(
+        self, admin: User, product_id: int, reason: str, ends_at: datetime | None = None
+    ) -> ProductDetailRead:
+        product = self._require_product(product_id)
+        if not policy.is_publicly_visible(product, _utcnow().date()):
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT,
+                detail="Only publicly visible products can be featured",
+            )
+        if crud.get_featured_product(self.db, product.id) is not None:
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT, detail="Product is already featured"
+            )
+        actor = _admin_profile(admin)
+        crud.create_featured_product(
+            self.db,
+            product_id=product.id,
+            featured_by_profile_id=actor.id,
+            reason=reason,
+            ends_at=ends_at,
+        )
+        self.staff_actions.record(
+            actor_profile_id=actor.id,
+            action_type=StaffActionType.FEATURE_PRODUCT,
+            target_type=StaffTargetType.PRODUCT,
+            target_id=product.id,
+            reason=reason,
+        )
+        self.audit.record(
+            actor_profile_id=actor.id,
+            event_type=AuditEventType.PRODUCT_FEATURED,
+            entity_type=AuditEntityType.PRODUCT,
+            entity_id=product.id,
+            after_state={"ends_at": ends_at.isoformat() if ends_at else None},
+        )
+        self.db.commit()
+        self.db.refresh(product)
+        return ProductService.detail(product)
+
+    def unfeature(self, admin: User, product_id: int) -> ProductDetailRead:
+        product = self._require_product(product_id)
+        featured = crud.get_featured_product(self.db, product.id)
+        if featured is None:
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT, detail="Product is not featured"
+            )
+        actor = _admin_profile(admin)
+        crud.delete_featured_product(self.db, featured)
+        self.staff_actions.record(
+            actor_profile_id=actor.id,
+            action_type=StaffActionType.UNFEATURE_PRODUCT,
+            target_type=StaffTargetType.PRODUCT,
+            target_id=product.id,
+        )
+        self.audit.record(
+            actor_profile_id=actor.id,
+            event_type=AuditEventType.PRODUCT_UNFEATURED,
+            entity_type=AuditEntityType.PRODUCT,
+            entity_id=product.id,
+        )
+        self.db.commit()
+        self.db.refresh(product)
+        return ProductService.detail(product)
+
+    def list_featured(self, *, limit: int, offset: int) -> list[ProductRead]:
+        rows = crud.list_active_featured_products(self.db, at=_utcnow(), limit=limit, offset=offset)
+        return [ProductRead.model_validate(row.product) for row in rows]
+
+    def _require_product(self, product_id: int) -> Product:
+        product = crud.get_product(self.db, product_id)
+        if product is None:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Product not found")
+        return product

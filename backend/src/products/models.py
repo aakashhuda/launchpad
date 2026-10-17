@@ -254,3 +254,32 @@ class FounderExport(TimestampMixin, Base):
         Index("founder_exports_idx_0", "product_id", "created_at"),
         Index("founder_exports_idx_1", "requested_by_profile_id", "created_at"),
     )
+
+
+class FeaturedProduct(CreatedAtMixin, Base):
+    """A staff-featured product promoted on the front page.
+
+    At most one row per product (``product_id`` is unique); unfeaturing deletes
+    the row rather than toggling a flag. ``created_at`` is when it was featured
+    and ``ends_at`` optionally expires the feature. Written only by the admin
+    feature endpoint — founders cannot feature their own products.
+    """
+
+    __tablename__ = "featured_products"
+
+    id: Mapped[int] = mapped_column(Integer, Identity(), primary_key=True)
+    featured_product_uuid: Mapped[uuid.UUID] = mapped_column(
+        Uuid, unique=True, nullable=False, default=uuid.uuid4
+    )
+    product_id: Mapped[int] = mapped_column(
+        ForeignKey("products.id", ondelete="CASCADE"), unique=True, nullable=False
+    )
+    featured_by_profile_id: Mapped[int | None] = mapped_column(
+        ForeignKey("profiles.id", ondelete="SET NULL")
+    )
+    reason: Mapped[str] = mapped_column(Text, nullable=False)
+    ends_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+
+    product: Mapped[Product] = relationship()
+
+    __table_args__ = (Index("featured_products_idx_0", "created_at"),)

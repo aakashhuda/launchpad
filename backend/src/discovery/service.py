@@ -17,6 +17,7 @@ from src.discovery.schemas import (
     SearchSort,
 )
 from src.integrations import cache
+from src.products import crud as products_crud
 from src.products.models import Product, ProductLaunch
 from src.staff.models import AuditEntityType, AuditEventType
 from src.staff.service import AuditLogService
@@ -52,7 +53,9 @@ def _rank_rows(
     return scored
 
 
-def _ranked_read(rank: int, product: Product, vote_count: int, score: float) -> RankedProductRead:
+def _ranked_read(
+    rank: int, product: Product, vote_count: int, score: float, *, featured: bool = False
+) -> RankedProductRead:
     return RankedProductRead(
         rank=rank,
         product_id=product.id,
@@ -60,6 +63,7 @@ def _ranked_read(rank: int, product: Product, vote_count: int, score: float) -> 
         one_line_pitch=product.one_line_pitch,
         vote_count=vote_count,
         score=round(score, 6),
+        featured=featured,
     )
 
 
@@ -72,9 +76,19 @@ class RankingService:
     def today(self, *, limit: int, offset: int) -> list[RankedProductRead]:
         rows = crud.list_launches_for_date(self.db, _today())
         ranked = _rank_rows(rows, now=_utcnow())
+        featured_ids = set(products_crud.list_active_featured_product_ids(self.db, at=_utcnow()))
+        # Pin active features above the velocity ordering (stable sort preserves
+        # score order within the featured and non-featured groups).
+        ranked.sort(key=lambda item: 0 if item[0].id in featured_ids else 1)
         page = ranked[offset : offset + limit]
         return [
-            _ranked_read(rank=offset + index + 1, product=product, vote_count=count, score=score)
+            _ranked_read(
+                rank=offset + index + 1,
+                product=product,
+                vote_count=count,
+                score=score,
+                featured=product.id in featured_ids,
+            )
             for index, (product, count, score) in enumerate(page)
         ]
 

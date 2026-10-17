@@ -47,6 +47,29 @@ def list_staff_actions(db: Session, *, limit: int, offset: int) -> list[StaffAct
     )
 
 
+def list_audit_logs(
+    db: Session,
+    *,
+    event_type: AuditEventType | None = None,
+    entity_type: AuditEntityType | None = None,
+    entity_id: int | None = None,
+    actor_profile_id: int | None = None,
+    limit: int,
+    offset: int,
+) -> list[AuditLog]:
+    stmt = select(AuditLog)
+    if event_type is not None:
+        stmt = stmt.where(AuditLog.event_type == event_type)
+    if entity_type is not None:
+        stmt = stmt.where(AuditLog.entity_type == entity_type)
+    if entity_id is not None:
+        stmt = stmt.where(AuditLog.entity_id == entity_id)
+    if actor_profile_id is not None:
+        stmt = stmt.where(AuditLog.actor_profile_id == actor_profile_id)
+    stmt = stmt.order_by(AuditLog.created_at.desc(), AuditLog.id.desc())
+    return list(db.scalars(stmt.limit(limit).offset(offset)))
+
+
 def create_audit_log(
     db: Session,
     *,

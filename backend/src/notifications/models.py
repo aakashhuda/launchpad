@@ -54,6 +54,8 @@ class NotificationEventType(str, enum.Enum):
     RANKING_DAILY_TOP_FIVE = "ranking.daily_top_five"
     RANKING_WEEKLY_BEST = "ranking.weekly_best"
     FOUNDER_EXPORT_READY = "founder.export_ready"
+    USER_SUSPENDED = "user.suspended"
+    USER_REACTIVATED = "user.reactivated"
 
 
 class NotificationDeliveryStatus(str, enum.Enum):

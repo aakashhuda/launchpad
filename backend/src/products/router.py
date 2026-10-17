@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from fastapi import APIRouter, Depends, status
+from fastapi import APIRouter, Depends, Query, status
 from fastapi.responses import FileResponse
 from sqlalchemy.orm import Session
 
@@ -17,6 +17,7 @@ from src.products.schemas import (
 )
 from src.products.service import (
     FounderExportService,
+    ProductFeatureService,
     ProductLaunchService,
     ProductService,
     SubmissionService,
@@ -41,6 +42,15 @@ def list_my_products(
     current_user: User = Depends(require_verified_role("founder")),
 ) -> list[ProductRead]:
     return ProductService(db).list_for_user(current_user)
+
+
+@router.get("/featured", response_model=list[ProductRead])
+def list_featured_products(
+    limit: int = Query(20, ge=1, le=100),
+    offset: int = Query(0, ge=0),
+    db: Session = Depends(get_db),
+) -> list[ProductRead]:
+    return ProductFeatureService(db).list_featured(limit=limit, offset=offset)
 
 
 @router.get("/{product_id}", response_model=ProductDetailRead)

@@ -17,18 +17,27 @@ from src.auth.schemas import (
 from src.auth.service import AuthService
 from src.core.database import get_db
 from src.core.dependencies import get_current_user
+from src.core.rate_limit import rate_limit
 from src.users.models import User
 
 router = APIRouter()
 
 
 @router.post("/signup", response_model=TokenResponse, status_code=status.HTTP_201_CREATED)
-def signup(payload: SignupRequest, db: Session = Depends(get_db)) -> TokenResponse:
+def signup(
+    payload: SignupRequest,
+    db: Session = Depends(get_db),
+    _rl: None = Depends(rate_limit("auth_signup", limit_setting="rate_limit_auth_per_minute")),
+) -> TokenResponse:
     return AuthService(db).signup(payload)
 
 
 @router.post("/login", response_model=TokenResponse)
-def login(payload: LoginRequest, db: Session = Depends(get_db)) -> TokenResponse:
+def login(
+    payload: LoginRequest,
+    db: Session = Depends(get_db),
+    _rl: None = Depends(rate_limit("auth_login", limit_setting="rate_limit_auth_per_minute")),
+) -> TokenResponse:
     return AuthService(db).login(payload)
 
 
@@ -51,7 +60,11 @@ def verify_email(payload: VerifyEmailRequest, db: Session = Depends(get_db)) -> 
 
 @router.post("/forgot-password", response_model=MessageResponse)
 def forgot_password(
-    payload: ForgotPasswordRequest, db: Session = Depends(get_db)
+    payload: ForgotPasswordRequest,
+    db: Session = Depends(get_db),
+    _rl: None = Depends(
+        rate_limit("auth_forgot_password", limit_setting="rate_limit_auth_per_minute")
+    ),
 ) -> MessageResponse:
     AuthService(db).forgot_password(payload.email)
     return MessageResponse(message="If the account exists, a reset email has been sent")

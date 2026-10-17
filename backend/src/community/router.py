@@ -14,6 +14,7 @@ from src.community.schemas import (
 from src.community.service import CommentService, FeedService, ReportService, VoteService
 from src.core.database import get_db
 from src.core.dependencies import require_verified_role
+from src.core.rate_limit import rate_limit
 from src.products.schemas import ProductRead
 from src.users.models import User
 
@@ -25,6 +26,7 @@ def cast_vote(
     product_id: int,
     db: Session = Depends(get_db),
     current_user: User = Depends(require_verified_role("member")),
+    _rl: None = Depends(rate_limit("vote", limit_setting="rate_limit_vote_per_minute")),
 ) -> VoteRead:
     return VoteService(db).vote(current_user, product_id)
 
@@ -34,6 +36,7 @@ def remove_vote(
     product_id: int,
     db: Session = Depends(get_db),
     current_user: User = Depends(require_verified_role("member")),
+    _rl: None = Depends(rate_limit("vote", limit_setting="rate_limit_vote_per_minute")),
 ) -> VoteRead:
     return VoteService(db).unvote(current_user, product_id)
 
@@ -48,6 +51,7 @@ def create_comment(
     payload: CommentCreate,
     db: Session = Depends(get_db),
     current_user: User = Depends(require_verified_role("member")),
+    _rl: None = Depends(rate_limit("comment", limit_setting="rate_limit_comment_per_minute")),
 ) -> CommentRead:
     return CommentService(db).create(current_user, product_id, payload)
 
@@ -80,6 +84,7 @@ def report_product(
     payload: ReportCreate,
     db: Session = Depends(get_db),
     current_user: User = Depends(require_verified_role("member")),
+    _rl: None = Depends(rate_limit("report", limit_setting="rate_limit_report_per_minute")),
 ) -> ReportRead:
     return ReportService(db).report_product(current_user, product_id, payload)
 
@@ -94,6 +99,7 @@ def report_comment(
     payload: ReportCreate,
     db: Session = Depends(get_db),
     current_user: User = Depends(require_verified_role("member")),
+    _rl: None = Depends(rate_limit("report", limit_setting="rate_limit_report_per_minute")),
 ) -> ReportRead:
     return ReportService(db).report_comment(current_user, comment_id, payload)
 

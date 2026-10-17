@@ -15,12 +15,25 @@ def _clear_discovery_cache() -> Iterator[None]:
         from src.integrations.redis import get_redis_client
 
         redis = get_redis_client()
-        keys = list(redis.scan_iter("cache:discovery:*")) + list(redis.scan_iter("events:task*"))
+        keys = (
+            list(redis.scan_iter("cache:discovery:*"))
+            + list(redis.scan_iter("events:task*"))
+            + list(redis.scan_iter("limits:*"))
+            + list(redis.scan_iter("abuse:*"))
+        )
         if keys:
             redis.delete(*keys)
     except Exception:
         pass
     yield
+
+
+@pytest.fixture(autouse=True)
+def _disable_rate_limiting(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Rate limiting is on by default; opt specific tests back in."""
+    from src.core.config import settings
+
+    monkeypatch.setattr(settings, "rate_limit_enabled", False)
 
 
 @pytest.fixture()

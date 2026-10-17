@@ -1,11 +1,13 @@
 from __future__ import annotations
 
+from datetime import datetime, timezone
+
 from fastapi import HTTPException, status
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from src.users import crud
-from src.users.models import AuthProvider, MemberFollow, Profile, Role, User
+from src.users.models import AuthProvider, MemberFollow, Profile, Role, User, UserStatus
 from src.users.schemas import ProfileCreate, ProfileRead, UserCreate, UserWithProfilesRead
 
 _MAX_SLUG_RETRIES = 3
@@ -100,6 +102,108 @@ class UserService:
 
     def read_with_profiles(self, user: User) -> UserWithProfilesRead:
         return UserWithProfilesRead.model_validate(user)
+
+    # --- governance (admin suspend / reactivate) ---
+
+    def suspend(self, admin: User, target_user_id: int, reason: str) -> User:
+        """Suspend a member account. Admin-only; recorded and notified."""
+        return self._set_suspension(admin, target_user_id, suspend=True, reason=reason)
+
+    def reactivate(self, admin: User, target_user_id: int) -> User:
+        """Lift a suspension. Admin-only; recorded and notified."""
+        return self._set_suspension(admin, target_user_id, suspend=False, reason=None)
+
+    def _set_suspension(
+        self, admin: User, target_user_id: int, *, suspend: bool, reason: str | None
+    ) -> User:
+        # Imported lazily to keep the users <-> staff/notifications modules acyclic.
+        from src.notifications.models import NotificationEventType
+        from src.notifications.service import NotificationService
+        from src.staff.models import (
+            AuditEntityType,
+            AuditEventType,
+            StaffActionType,
+            StaffTargetType,
+        )
+        from src.staff.service import AuditLogService, StaffActionService
+
+        if admin.id == target_user_id:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Admins cannot change their own account status",
+            )
+        target = crud.get_user_by_id(self.db, target_user_id)
+        if target is None:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found")
+        if self._holds_admin(target):
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Admin accounts cannot be suspended",
+            )
+        if suspend and target.status == UserStatus.SUSPENDED:
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT, detail="Member is already suspended"
+            )
+        if not suspend and target.status != UserStatus.SUSPENDED:
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT, detail="Member is not suspended"
+            )
+
+        actor = self._acting_admin_profile(admin)
+        target_profile = target.profiles[0] if target.profiles else None
+        if suspend:
+            target.status = UserStatus.SUSPENDED
+            target.suspended_at = datetime.now(timezone.utc)
+            target.suspension_reason = reason
+            action_type = StaffActionType.SUSPEND_MEMBER
+            event_type = AuditEventType.USER_SUSPENDED
+            notification_event = NotificationEventType.USER_SUSPENDED
+        else:
+            target.status = UserStatus.ACTIVE
+            target.suspended_at = None
+            target.suspension_reason = None
+            action_type = StaffActionType.REACTIVATE_MEMBER
+            event_type = AuditEventType.USER_REACTIVATED
+            notification_event = NotificationEventType.USER_REACTIVATED
+        self.db.flush()
+
+        StaffActionService(self.db).record(
+            actor_profile_id=actor.id,
+            action_type=action_type,
+            target_type=StaffTargetType.MEMBER,
+            target_id=target_profile.id if target_profile is not None else target.id,
+            reason=reason,
+        )
+        AuditLogService(self.db).record(
+            actor_profile_id=actor.id,
+            event_type=event_type,
+            entity_type=AuditEntityType.USER,
+            entity_id=target.id,
+            after_state={"status": target.status.value},
+        )
+        if target_profile is not None:
+            NotificationService(self.db).emit(
+                recipient_profile_id=target_profile.id,
+                actor_profile_id=actor.id,
+                event_type=notification_event,
+                payload={"reason": reason} if reason else {},
+            )
+        self.db.commit()
+        self.db.refresh(target)
+        return target
+
+    @staticmethod
+    def _holds_admin(user: User) -> bool:
+        return any(
+            profile.role is not None and profile.role.slug == "admin" for profile in user.profiles
+        )
+
+    @staticmethod
+    def _acting_admin_profile(admin: User) -> Profile:
+        for profile in admin.profiles:
+            if profile.role is not None and profile.role.slug == "admin":
+                return profile
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Admin profile required")
 
 
 class ProfileService:

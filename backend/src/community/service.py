@@ -17,12 +17,14 @@ from src.community.schemas import (
     ReportResolveRequest,
     VoteRead,
 )
+from src.core.config import settings
 from src.notifications.models import NotificationEventType
 from src.notifications.service import NotificationService
 from src.products import crud as products_crud
 from src.products import policy as products_policy
 from src.products.models import Product
 from src.products.schemas import ProductRead
+from src.staff import monitor as abuse_monitor
 from src.staff.models import AuditEntityType, AuditEventType, StaffActionType, StaffTargetType
 from src.staff.service import AuditLogService, StaffActionService
 from src.users.models import Profile, User
@@ -125,6 +127,12 @@ class VoteService:
                 pass  # a concurrent request already recorded the vote
         count = crud.count_votes_for_product(self.db, product.id)
         self.db.commit()
+        abuse_monitor.flag_if_suspicious(
+            "vote",
+            user_id=user.id,
+            threshold=settings.abuse_vote_threshold,
+            window_seconds=settings.abuse_window_seconds,
+        )
         return VoteRead(product_id=product.id, vote_count=count, has_voted=True)
 
     def unvote(self, user: User, product_id: int) -> VoteRead:
@@ -180,6 +188,12 @@ class CommentService:
             )
         self.db.commit()
         self.db.refresh(comment)
+        abuse_monitor.flag_if_suspicious(
+            "comment",
+            user_id=user.id,
+            threshold=settings.abuse_comment_threshold,
+            window_seconds=settings.abuse_window_seconds,
+        )
         return _comment_read(comment)
 
     def list_for_product(self, product_id: int) -> list[CommentRead]:
@@ -239,6 +253,12 @@ class ReportService:
         )
         self.db.commit()
         self.db.refresh(report)
+        abuse_monitor.flag_if_suspicious(
+            "report",
+            user_id=user.id,
+            threshold=settings.abuse_report_threshold,
+            window_seconds=settings.abuse_window_seconds,
+        )
         return ReportRead.model_validate(report)
 
     def report_comment(self, user: User, comment_id: int, payload: ReportCreate) -> ReportRead:
@@ -272,6 +292,12 @@ class ReportService:
         )
         self.db.commit()
         self.db.refresh(report)
+        abuse_monitor.flag_if_suspicious(
+            "report",
+            user_id=user.id,
+            threshold=settings.abuse_report_threshold,
+            window_seconds=settings.abuse_window_seconds,
+        )
         return ReportRead.model_validate(report)
 
     def list_queue(self, *, limit: int, offset: int) -> list[ReportRead]:

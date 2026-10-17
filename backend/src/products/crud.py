@@ -1,11 +1,12 @@
 from __future__ import annotations
 
-from datetime import date
+from datetime import date, datetime
 
 from sqlalchemy import delete, func, select
 from sqlalchemy.orm import Session
 
 from src.products.models import (
+    FeaturedProduct,
     FounderExport,
     LaunchState,
     Product,
@@ -202,3 +203,59 @@ def update_export(db: Session, export: FounderExport, **fields: object) -> Found
         setattr(export, key, value)
     db.flush()
     return export
+
+
+# --- featured products (Phase 7 staff governance) ---
+
+
+def get_featured_product(db: Session, product_id: int) -> FeaturedProduct | None:
+    return db.scalar(select(FeaturedProduct).where(FeaturedProduct.product_id == product_id))
+
+
+def create_featured_product(
+    db: Session,
+    *,
+    product_id: int,
+    featured_by_profile_id: int,
+    reason: str,
+    ends_at: datetime | None,
+) -> FeaturedProduct:
+    featured = FeaturedProduct(
+        product_id=product_id,
+        featured_by_profile_id=featured_by_profile_id,
+        reason=reason,
+        ends_at=ends_at,
+    )
+    db.add(featured)
+    db.flush()
+    return featured
+
+
+def delete_featured_product(db: Session, featured: FeaturedProduct) -> None:
+    db.delete(featured)
+    db.flush()
+
+
+def list_active_featured_product_ids(db: Session, *, at: datetime) -> list[int]:
+    """Product ids whose feature is still active (no expiry, or expiry in the future)."""
+    return list(
+        db.scalars(
+            select(FeaturedProduct.product_id)
+            .where((FeaturedProduct.ends_at.is_(None)) | (FeaturedProduct.ends_at > at))
+            .order_by(FeaturedProduct.created_at.desc(), FeaturedProduct.id.desc())
+        )
+    )
+
+
+def list_active_featured_products(
+    db: Session, *, at: datetime, limit: int, offset: int
+) -> list[FeaturedProduct]:
+    return list(
+        db.scalars(
+            select(FeaturedProduct)
+            .where((FeaturedProduct.ends_at.is_(None)) | (FeaturedProduct.ends_at > at))
+            .order_by(FeaturedProduct.created_at.desc(), FeaturedProduct.id.desc())
+            .limit(limit)
+            .offset(offset)
+        )
+    )

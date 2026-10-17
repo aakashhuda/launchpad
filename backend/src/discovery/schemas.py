@@ -18,6 +18,7 @@ class RankedProductRead(BaseModel):
     one_line_pitch: str
     vote_count: int
     score: float
+    featured: bool = False
 
 
 class DaySnapshotRead(BaseModel):

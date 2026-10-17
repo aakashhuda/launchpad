@@ -6,10 +6,18 @@ from sqlalchemy.orm import Session
 
 from src.core.database import get_db
 from src.core.security import TokenType, decode_token_of_type
-from src.users.models import User
+from src.users.models import User, UserStatus
 from src.users.service import UserService
 
 bearer_scheme = HTTPBearer(auto_error=False)
+
+
+def _reject_if_suspended(user: User) -> None:
+    if user.status == UserStatus.SUSPENDED:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Account suspended",
+        )
 
 
 def get_current_user(
@@ -41,6 +49,7 @@ def get_current_user(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="User not found",
         )
+    _reject_if_suspended(user)
     return user
 
 
@@ -58,7 +67,10 @@ def get_optional_current_user(
         user_id = int(claims["sub"])
     except (KeyError, ValueError):
         return None
-    return UserService(db).get_by_id(user_id)
+    user = UserService(db).get_by_id(user_id)
+    if user is None or user.status == UserStatus.SUSPENDED:
+        return None
+    return user
 
 
 def require_verified_email(current_user: User = Depends(get_current_user)) -> User:
