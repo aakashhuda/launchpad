@@ -27,6 +27,7 @@ Read the following to get the full context of the project:
 - **Backend type check**: `cd backend && python3 -m mypy src`
 - **Apply migrations**: `cd backend && alembic upgrade head`
 - **Migration drift check**: `cd backend && alembic check`
+- **Reset + seed dev data**: `cd backend && python scripts/seed_dev_data.py` (destructive)
 - **Export OpenAPI baseline**: `cd backend && python scripts/export_openapi.py`
 - **API compatibility check**: `cd backend && python scripts/openapi_compat.py openapi.json /tmp/openapi.json`
 

@@ -58,6 +58,21 @@ python -m src.tasks.worker
 Interactive docs: **<http://localhost:8000/docs>** (Swagger UI),
 `/redoc`, `/openapi.json`.
 
+### Seed dummy data (recommended)
+
+To start from a known dataset — accounts, products across lifecycle states,
+votes, a comment, an open report, a featured product, notifications, and a
+frozen day snapshot — run:
+
+```bash
+cd backend && .venv/bin/python scripts/seed_dev_data.py
+```
+
+This **wipes every table and reseeds** the database configured by
+`DATABASE_URL` (refuses to run when `APP_ENV=production`). It creates the
+founder/member/reviewer/admin accounts described in §5, all with password
+`password123` and verified emails, so you can jump straight to **Login** in §7.
+
 ---
 
 ## 3. Import into Restfox
@@ -107,10 +122,21 @@ saves `access_token`/`refresh_token`; every protected request sends
 
 ## 5. Accounts and roles
 
-Signup is **self-serve for `member` and `founder` only**. `reviewer` and
-`admin` cannot be created through the API — create them directly (roles are
-seeded by `scripts/seed_roles.sql`; `ProfileService` will also create a missing
-role on demand):
+**If you ran the seed (§2) these accounts already exist** — just log in
+(password `password123`):
+
+| Email | Role |
+| ----- | ---- |
+| `tester@example.com` | member (matches the collection default) |
+| `member2@example.com` | member |
+| `founder@example.com` | founder |
+| `reviewer@example.com` | reviewer |
+| `admin@example.com` | admin |
+
+Otherwise, create them manually. Signup is **self-serve for `member` and
+`founder` only**. `reviewer` and `admin` cannot be created through the API —
+create them directly (roles are seeded by `scripts/seed_roles.sql`;
+`ProfileService` will also create a missing role on demand):
 
 ```bash
 cd backend && .venv/bin/python - <<'PY'
@@ -165,7 +191,9 @@ Paste the value into `verification_token` / `reset_token`, then run the
 
 With the server running and the collection imported:
 
-1. **Auth → Signup** — creates the account, captures tokens.
+1. **Auth → Login** — signs in as `tester@example.com` and captures tokens.
+   (Use **Signup** instead if you did *not* seed; the seeded accounts already
+   exist and are email-verified, so Login is enough.)
 2. *(optional)* set `verification_token` (§6) → **Auth → Verify Email**.
    Most member/founder actions return `403` until the email is verified.
 3. **Users → Me** — captures `user_id`, `profile_slug`; confirms profiles/roles.
