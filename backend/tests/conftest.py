@@ -8,6 +8,21 @@ from src.core.database import engine, get_db
 from src.main import app
 
 
+@pytest.fixture(autouse=True)
+def _clear_discovery_cache() -> Iterator[None]:
+    """Drop cached discovery reads so tests never observe another test's data."""
+    try:
+        from src.integrations.redis import get_redis_client
+
+        redis = get_redis_client()
+        keys = list(redis.scan_iter("cache:discovery:*"))
+        if keys:
+            redis.delete(*keys)
+    except Exception:
+        pass
+    yield
+
+
 @pytest.fixture()
 def db_session() -> Iterator[Session]:
     connection = engine.connect()

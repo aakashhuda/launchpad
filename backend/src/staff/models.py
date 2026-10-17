@@ -47,6 +47,7 @@ class AuditEventType(str, enum.Enum):
     REPORT_ASSIGNED = "report.assigned"
     REPORT_RESOLVED = "report.resolved"
     REPORT_DISMISSED = "report.dismissed"
+    SNAPSHOT_FROZEN = "snapshot.frozen"
 
 
 class AuditEntityType(str, enum.Enum):
@@ -54,6 +55,7 @@ class AuditEntityType(str, enum.Enum):
     SUBMISSION = "submission"
     LAUNCH = "launch"
     REPORT = "report"
+    SNAPSHOT = "snapshot"
 
 
 class StaffAction(CreatedAtMixin, Base):

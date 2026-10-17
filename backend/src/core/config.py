@@ -35,6 +35,7 @@ class Settings(BaseSettings):
     password_reset_expire_hours: int = 1
     google_client_id: str | None = None
     max_launches_per_founder_per_day: int = 2
+    discovery_cache_ttl_seconds: int = 60
 
 
 @lru_cache

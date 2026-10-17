@@ -150,6 +150,20 @@ def set_launch_state(
     return launch
 
 
+def list_scheduled_product_ids_for_date(db: Session, on_date: date) -> list[int]:
+    """Product ids whose launch is scheduled to arrive on ``on_date``."""
+    return list(
+        db.scalars(
+            select(ProductLaunch.product_id)
+            .where(
+                ProductLaunch.launch_date == on_date,
+                ProductLaunch.state == LaunchState.SCHEDULED,
+            )
+            .order_by(ProductLaunch.id.asc())
+        )
+    )
+
+
 def count_launches_for_profile_on_date(
     db: Session,
     profile_id: int,

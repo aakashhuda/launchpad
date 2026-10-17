@@ -10,6 +10,7 @@ from __future__ import annotations
 
 import src.auth.models  # noqa: F401
 import src.community.models  # noqa: F401
+import src.discovery.models  # noqa: F401
 import src.notifications.models  # noqa: F401
 import src.products.models  # noqa: F401
 import src.staff.models  # noqa: F401
