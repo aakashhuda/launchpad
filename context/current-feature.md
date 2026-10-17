@@ -1,20 +1,37 @@
-# Current Feature
+# Current Feature: Phase 8 — Quality Gates, CI, and Release Discipline
 
-<!-- Feature Name -->
+<!-- Feature Name: Phase 8 — Quality Gates, CI, and Release Discipline -->
 
 ## Status
 
 <!-- Not Started|In Progress|Completed -->
 
-Not Started
+In Progress
 
 ## Goals
 
 <!-- Goals & requirements -->
 
+- GitHub Actions CI pipeline (`.github/workflows/backend-ci.yml`) on push to `main` + PRs, Python 3.10.12, with **PostgreSQL + Redis service containers** (no Docker Compose — project is no-Docker).
+- CI runs, from `backend/`: `ruff check .`, `black --check .`, `isort --check-only .`, `mypy src`, `alembic upgrade head`, `alembic check`, `pytest -q` (with `pytest-cov`). All required for merge to `main`.
+- Add `[tool.mypy]` to `backend/pyproject.toml`: `plugins = ["pydantic.mypy"]` (resolves `Settings()` call-arg errors) + `jose.*`/`passlib.*` `ignore_missing_imports` (or add `types-python-jose`/`types-passlib` to dev.txt). `mypy src` must exit 0.
+- Clear the `alembic check` drift by declaring `products_search_idx` (functional GIN over `to_tsvector`) in `Product.__table_args__` — metadata-only, no editing of the applied Phase 5 migration.
+- API compatibility/versioning gate: document `context/api-versioning-policy.md` (additive on `/api/v1`; breaking needs new version segment / deprecation window) + commit a generated `backend/openapi.json` baseline and fail CI on breaking diffs (field removal/rename/type change); additive changes update the baseline.
+- Coverage: report-only or conservative `--cov-fail-under` just below baseline (don't block on an unmeasured threshold).
+- Release discipline: `context/release-playbook.md` (release checklist, dev→staging→prod promotion flow, forward-only rollback, `vX.Y.Z` tagging) cross-referencing the Phase 7 operational runbook; introduce `CHANGELOG.md`; document branch/PR/required-checks policy.
+
 ## Notes
 
 <!-- Any extra notes -->
+
+- Spec: `@context/features/08-phase-8-quality-gates-ci-and-release-discipline-spec.md`
+- Tag system unused (no `context/git-conventions.md`, no phase tags — confirmed Phase 7). Prior phases complete by artifact presence; Phase 7 merged to `main` (HEAD `90d593c`). Expected workflow: branch `phase-8-quality-gates-ci-and-release-discipline`, merge to `main`, mark complete in `current-feature.md`.
+- This phase is the natural home for the three pre-existing tooling items flagged at the end of Phase 7 (none are runtime bugs): mypy `Settings()` call-args (pydantic plugin), `jose`/`passlib` stub noise (stub pkgs or ignore overrides), and `alembic check` `products_search_idx` drift (declare in `Product` metadata). Resolved here so CI is green from day one.
+- CI must provision real Postgres + Redis (suite is integration-style; `conftest` disables rate limiting + clears Redis keys per test). Throwaway `SECRET_KEY`/`DATABASE_URL`/`REDIS_URL`; no real secrets.
+- No new runtime deps — only dev tooling (optional type stubs) and CI config. `requirements/base.txt` and `prod.txt` unchanged.
+- OpenAPI baseline diff = the enforceable API-compatibility gate; additive changes update the committed baseline.
+- `AGENTS.md` has no "five business rules"/session/order data — N/A. Invariants: forward-only migrations, `/api/v1` additive-only with explicit deprecation, no-secrets-in-repo, no-Docker CI.
+- Conventional commits; no Claude/Generated-With-Claude in commit messages.
 
 ## History
 

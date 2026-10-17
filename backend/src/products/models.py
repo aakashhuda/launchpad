@@ -101,6 +101,14 @@ class Product(TimestampMixin, Base):
         ),
         Index("products_idx_1", "status", "created_at"),
         Index("products_idx_2", "name"),
+        # Full-text search index created by migration c2a9f1e4d7b3 via raw SQL.
+        # Declared here using PostgreSQL's normalized expression form so ORM
+        # metadata and the migrated schema agree and ``alembic check`` is clean.
+        Index(
+            "products_search_idx",
+            text("to_tsvector('english'::regconfig, (name::text || ' '::text) || description)"),
+            postgresql_using="gin",
+        ),
     )
 
 
