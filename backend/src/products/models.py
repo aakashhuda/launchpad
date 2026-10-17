@@ -54,6 +54,12 @@ class SubmissionStatus(str, enum.Enum):
     CHANGES_REQUESTED = "changes_requested"
 
 
+class ExportStatus(str, enum.Enum):
+    PREPARING = "preparing"
+    READY = "ready"
+    FAILED = "failed"
+
+
 class Product(TimestampMixin, Base):
     __tablename__ = "products"
 
@@ -201,4 +207,50 @@ class Submission(TimestampMixin, Base):
         ),
         Index("submissions_idx_0", "status", "created_at"),
         Index("submissions_idx_1", "product_id", "created_at"),
+    )
+
+
+class FounderExport(TimestampMixin, Base):
+    """A founder-requested export of their product's dashboard data.
+
+    The export is generated asynchronously: a row is created in ``PREPARING``
+    when the founder requests it, a background job writes the artifact and flips
+    it to ``READY`` (or ``FAILED``), and the founder is notified on completion.
+    This is job bookkeeping, not analytics — the artifact itself is the file at
+    ``artifact_path``.
+    """
+
+    __tablename__ = "founder_exports"
+
+    id: Mapped[int] = mapped_column(Integer, Identity(), primary_key=True)
+    export_uuid: Mapped[uuid.UUID] = mapped_column(
+        Uuid, unique=True, nullable=False, default=uuid.uuid4
+    )
+    product_id: Mapped[int] = mapped_column(
+        ForeignKey("products.id", ondelete="CASCADE"), nullable=False
+    )
+    requested_by_profile_id: Mapped[int] = mapped_column(
+        ForeignKey("profiles.id", ondelete="CASCADE"), nullable=False
+    )
+    status: Mapped[ExportStatus] = mapped_column(
+        Enum(
+            ExportStatus,
+            native_enum=False,
+            length=20,
+            create_constraint=False,
+            values_callable=enum_values,
+        ),
+        nullable=False,
+        default=ExportStatus.PREPARING,
+        server_default=text("'preparing'"),
+    )
+    artifact_path: Mapped[str | None] = mapped_column(String(500))
+    error: Mapped[str | None] = mapped_column(Text)
+
+    product: Mapped[Product] = relationship()
+    requested_by_profile: Mapped[Profile] = relationship()
+
+    __table_args__ = (
+        Index("founder_exports_idx_0", "product_id", "created_at"),
+        Index("founder_exports_idx_1", "requested_by_profile_id", "created_at"),
     )

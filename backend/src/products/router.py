@@ -1,11 +1,13 @@
 from __future__ import annotations
 
 from fastapi import APIRouter, Depends, status
+from fastapi.responses import FileResponse
 from sqlalchemy.orm import Session
 
 from src.core.database import get_db
 from src.core.dependencies import get_optional_current_user, require_verified_role
 from src.products.schemas import (
+    ExportRead,
     LaunchScheduleRequest,
     ProductCreate,
     ProductDetailRead,
@@ -13,7 +15,12 @@ from src.products.schemas import (
     ProductUpdate,
     SubmissionRead,
 )
-from src.products.service import ProductLaunchService, ProductService, SubmissionService
+from src.products.service import (
+    FounderExportService,
+    ProductLaunchService,
+    ProductService,
+    SubmissionService,
+)
 from src.users.models import User
 
 router = APIRouter()
@@ -72,3 +79,37 @@ def schedule_launch(
     current_user: User = Depends(require_verified_role("founder")),
 ) -> ProductDetailRead:
     return ProductLaunchService(db).schedule(current_user, product_id, payload)
+
+
+@router.post(
+    "/{product_id}/export",
+    response_model=ExportRead,
+    status_code=status.HTTP_202_ACCEPTED,
+)
+def request_export(
+    product_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_verified_role("founder")),
+) -> ExportRead:
+    return FounderExportService(db).request(current_user, product_id)
+
+
+@router.get("/{product_id}/export/{export_id}", response_model=ExportRead)
+def read_export(
+    product_id: int,
+    export_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_verified_role("founder")),
+) -> ExportRead:
+    return FounderExportService(db).get(current_user, product_id, export_id)
+
+
+@router.get("/{product_id}/export/{export_id}/download")
+def download_export(
+    product_id: int,
+    export_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_verified_role("founder")),
+) -> FileResponse:
+    path = FounderExportService(db).require_artifact(current_user, product_id, export_id)
+    return FileResponse(path, media_type="application/json", filename=path.name)

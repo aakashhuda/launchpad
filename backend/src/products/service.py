@@ -1,13 +1,21 @@
 from __future__ import annotations
 
+import json
 from datetime import datetime, timezone
+from pathlib import Path
 
 from fastapi import HTTPException, status
 from sqlalchemy.orm import Session
 
+from src.community import crud as community_crud
 from src.core.config import settings
+from src.discovery import crud as discovery_crud
+from src.notifications.models import NotificationEventType
+from src.notifications.service import NotificationService
 from src.products import crud, policy
 from src.products.models import (
+    ExportStatus,
+    FounderExport,
     LaunchState,
     Product,
     ProductLaunch,
@@ -16,6 +24,7 @@ from src.products.models import (
     SubmissionStatus,
 )
 from src.products.schemas import (
+    ExportRead,
     LaunchRead,
     LaunchScheduleRequest,
     ProductCreate,
@@ -28,6 +37,7 @@ from src.products.schemas import (
 )
 from src.staff.models import AuditEntityType, AuditEventType, StaffActionType, StaffTargetType
 from src.staff.service import AuditLogService, StaffActionService
+from src.tasks.scheduler import enqueue_job
 from src.topics import crud as topics_crud
 from src.users.models import Profile, User
 
@@ -50,6 +60,12 @@ _DECISION_EVENTS = {
     SubmissionDecision.APPROVE: AuditEventType.SUBMISSION_APPROVED,
     SubmissionDecision.REJECT: AuditEventType.SUBMISSION_REJECTED,
     SubmissionDecision.REQUEST_CHANGES: AuditEventType.SUBMISSION_CHANGES_REQUESTED,
+}
+
+_DECISION_NOTIFICATIONS = {
+    SubmissionDecision.APPROVE: NotificationEventType.SUBMISSION_APPROVED,
+    SubmissionDecision.REJECT: NotificationEventType.SUBMISSION_REJECTED,
+    SubmissionDecision.REQUEST_CHANGES: NotificationEventType.SUBMISSION_CHANGES_REQUESTED,
 }
 
 
@@ -217,6 +233,7 @@ class SubmissionService:
         self.products = ProductService(db)
         self.staff_actions = StaffActionService(db)
         self.audit = AuditLogService(db)
+        self.notifications = NotificationService(db)
 
     def submit_for_review(self, user: User, product_id: int) -> SubmissionRead:
         product, profile = self.products.require_owned_product(user, product_id)
@@ -264,12 +281,13 @@ class SubmissionService:
             reviewed_at=_utcnow(),
         )
 
-        if target == SubmissionStatus.APPROVED:
-            product = crud.get_product(self.db, submission.product_id)
-            if product is not None and policy.can_transition_product(
-                product.status, ProductStatus.APPROVED
-            ):
-                crud.update_product(self.db, product, status=ProductStatus.APPROVED)
+        product = crud.get_product(self.db, submission.product_id)
+        if (
+            target == SubmissionStatus.APPROVED
+            and product is not None
+            and policy.can_transition_product(product.status, ProductStatus.APPROVED)
+        ):
+            crud.update_product(self.db, product, status=ProductStatus.APPROVED)
 
         self.staff_actions.record(
             actor_profile_id=actor.id,
@@ -285,6 +303,16 @@ class SubmissionService:
             entity_type=AuditEntityType.SUBMISSION,
             entity_id=submission.id,
             after_state={"status": target.value},
+        )
+        self.notifications.emit(
+            recipient_profile_id=submission.profile_id,
+            actor_profile_id=actor.id,
+            event_type=_DECISION_NOTIFICATIONS[payload.decision],
+            payload={
+                "product_id": submission.product_id,
+                "product_name": product.name if product is not None else "",
+                "note": payload.note,
+            },
         )
         self.db.commit()
         self.db.refresh(submission)
@@ -410,3 +438,136 @@ class ProductLaunchService:
         )
         self.db.commit()
         return launch
+
+
+class FounderExportService:
+    """Queues and generates a founder's product-dashboard export.
+
+    The request path only creates a ``PREPARING`` bookkeeping row and enqueues
+    the job by string name, so the founder is free to do something else; the job
+    writes the artifact and emits a completion notification.
+    """
+
+    def __init__(self, db: Session) -> None:
+        self.db = db
+        self.products = ProductService(db)
+        self.notifications = NotificationService(db)
+
+    def request(self, user: User, product_id: int) -> ExportRead:
+        product, profile = self.products.require_owned_product(user, product_id)
+        export = crud.create_export(
+            self.db, product_id=product.id, requested_by_profile_id=profile.id
+        )
+        self.db.commit()
+        self.db.refresh(export)
+        enqueue_job("products.generate_founder_export", {"export_id": export.id})
+        return ExportRead.model_validate(export)
+
+    def get(self, user: User, product_id: int, export_id: int) -> ExportRead:
+        product, _profile = self.products.require_owned_product(user, product_id)
+        export = self._require_export(product.id, export_id)
+        return ExportRead.model_validate(export)
+
+    def require_artifact(self, user: User, product_id: int, export_id: int) -> Path:
+        product, _profile = self.products.require_owned_product(user, product_id)
+        export = self._require_export(product.id, export_id)
+        if export.status != ExportStatus.READY or not export.artifact_path:
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT, detail="Export is not ready yet"
+            )
+        path = Path(export.artifact_path)
+        if not path.is_file():
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND, detail="Export artifact is missing"
+            )
+        return path
+
+    def generate(self, export_id: int) -> None:
+        export = crud.get_export(self.db, export_id)
+        if export is None or export.status == ExportStatus.READY:
+            return  # unknown or already generated — idempotent under retry
+
+        product = crud.get_product(self.db, export.product_id)
+        if product is None:
+            crud.update_export(
+                self.db, export, status=ExportStatus.FAILED, error="Product no longer exists"
+            )
+            self.db.commit()
+            return
+
+        try:
+            payload = self._build_payload(product)
+            path = self._write_artifact(export, payload)
+        except OSError as exc:
+            crud.update_export(self.db, export, status=ExportStatus.FAILED, error=str(exc))
+            self.db.commit()
+            return
+
+        crud.update_export(
+            self.db, export, status=ExportStatus.READY, artifact_path=str(path), error=None
+        )
+        self.notifications.emit(
+            recipient_profile_id=export.requested_by_profile_id,
+            event_type=NotificationEventType.FOUNDER_EXPORT_READY,
+            payload={
+                "product_id": product.id,
+                "product_name": product.name,
+                "export_id": export.id,
+            },
+        )
+        self.db.commit()
+
+    def _require_export(self, product_id: int, export_id: int) -> FounderExport:
+        export = crud.get_export(self.db, export_id)
+        if export is None or export.product_id != product_id:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Export not found")
+        return export
+
+    def _build_payload(self, product: Product) -> dict:
+        launch = product.product_launch
+        snapshot_item = discovery_crud.get_snapshot_item_for_product(self.db, product.id)
+        return {
+            "product": {
+                "id": product.id,
+                "name": product.name,
+                "one_line_pitch": product.one_line_pitch,
+                "status": product.status.value,
+                "created_at": product.created_at.isoformat(),
+            },
+            "launch": (
+                {
+                    "launch_date": launch.launch_date.isoformat(),
+                    "state": launch.state.value,
+                    "launched_at": (
+                        launch.launched_at.isoformat() if launch.launched_at is not None else None
+                    ),
+                }
+                if launch is not None
+                else None
+            ),
+            "votes": {
+                "total": community_crud.count_votes_for_product(self.db, product.id),
+                "by_day": [
+                    {"date": day.isoformat(), "count": count}
+                    for day, count in community_crud.list_vote_counts_by_day(self.db, product.id)
+                ],
+            },
+            "comments": {"total": community_crud.count_comments_for_product(self.db, product.id)},
+            "rank": (
+                {
+                    "rank": snapshot_item.rank,
+                    "vote_count": snapshot_item.vote_count,
+                    "score": snapshot_item.score,
+                }
+                if snapshot_item is not None
+                else None
+            ),
+        }
+
+    @staticmethod
+    def _write_artifact(export: FounderExport, payload: dict) -> Path:
+        directory = Path(settings.export_dir)
+        directory.mkdir(parents=True, exist_ok=True)
+        path = directory / f"product-{export.product_id}-{export.export_uuid}.json"
+        path.write_text(json.dumps(payload, indent=2), encoding="utf-8")
+        return path

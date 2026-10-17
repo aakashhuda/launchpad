@@ -17,6 +17,8 @@ from src.community.schemas import (
     ReportResolveRequest,
     VoteRead,
 )
+from src.notifications.models import NotificationEventType
+from src.notifications.service import NotificationService
 from src.products import crud as products_crud
 from src.products import policy as products_policy
 from src.products.models import Product
@@ -142,6 +144,7 @@ class CommentService:
     def __init__(self, db: Session) -> None:
         self.db = db
         self.profiles = ProfileService(db)
+        self.notifications = NotificationService(db)
 
     def create(self, user: User, product_id: int, payload: CommentCreate) -> CommentRead:
         profile = self.profiles.require_member_profile(user)
@@ -164,6 +167,17 @@ class CommentService:
             parent_comment_id=payload.parent_comment_id,
             text=payload.text,
         )
+        if product.profile_id != profile.id:
+            self.notifications.emit(
+                recipient_profile_id=product.profile_id,
+                actor_profile_id=profile.id,
+                event_type=NotificationEventType.COMMENT_CREATED,
+                payload={
+                    "product_id": product.id,
+                    "product_name": product.name,
+                    "comment_id": comment.id,
+                },
+            )
         self.db.commit()
         self.db.refresh(comment)
         return _comment_read(comment)

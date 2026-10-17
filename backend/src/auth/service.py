@@ -23,7 +23,8 @@ from src.core.security import (
     hash_password,
     verify_password,
 )
-from src.integrations import email as email_integration
+from src.notifications.models import NotificationEventType
+from src.notifications.service import NotificationService
 from src.users.models import AuthProvider, LastLoginRole, User
 from src.users.schemas import ProfileCreate, UserCreate
 from src.users.service import ProfileService, UserService
@@ -196,6 +197,7 @@ class AuthService:
         self.profiles = ProfileService(db)
         self.tokens = RefreshTokenService(db)
         self.google = GoogleSignInService(db)
+        self.notifications = NotificationService(db)
 
     # --- signup ---
 
@@ -228,15 +230,19 @@ class AuthService:
             ),
             password_hash=hash_password(payload.password),
         )
-        self.profiles.create_for_user(
+        profile = self.profiles.create_for_user(
             user,
             ProfileCreate(role_slug=payload.role.value, nick_name=payload.nick_name),
         )
         tokens = self.tokens.issue(user)
-        self.db.commit()
 
         verification_token = create_email_verification_token(str(user.id))
-        email_integration.send_verification_email(user.email, verification_token)
+        self.notifications.emit(
+            recipient_profile_id=profile.id,
+            event_type=NotificationEventType.EMAIL_VERIFICATION_REQUESTED,
+            payload={"token": verification_token},
+        )
+        self.db.commit()
         return tokens
 
     def _add_profile_to_existing_account(self, payload: SignupRequest, user: User) -> TokenResponse:
@@ -377,7 +383,14 @@ class AuthService:
         if user is None or user.auth_provider != AuthProvider.EMAIL:
             return  # no account enumeration
         reset_token = create_password_reset_token(str(user.id))
-        email_integration.send_password_reset_email(user.email, reset_token)
+        if not user.profiles:
+            return
+        self.notifications.emit(
+            recipient_profile_id=user.profiles[0].id,
+            event_type=NotificationEventType.PASSWORD_RESET_REQUESTED,
+            payload={"token": reset_token},
+        )
+        self.db.commit()
 
     def reset_password(self, token: str, new_password: str) -> None:
         claims = decode_token_of_type(token, TokenType.PASSWORD_RESET)

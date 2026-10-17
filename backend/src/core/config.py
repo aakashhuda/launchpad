@@ -37,6 +37,26 @@ class Settings(BaseSettings):
     max_launches_per_founder_per_day: int = 2
     discovery_cache_ttl_seconds: int = 60
 
+    # Outbound email. Disabled by default so dev/test runs need no provider;
+    # the transport logs instead. Real delivery requires email_enabled=True plus
+    # SMTP settings sourced from the environment (never committed).
+    email_enabled: bool = False
+    email_provider: str = "smtp"
+    email_from_address: str = "no-reply@launchpad.local"
+    smtp_host: str | None = None
+    smtp_port: int = 587
+    smtp_username: str | None = None
+    smtp_password: str | None = None
+    smtp_use_tls: bool = True
+
+    # Notification delivery retry/backoff (provider-outage resilience).
+    notification_max_attempts: int = 3
+    notification_retry_base_seconds: float = 5.0
+    notification_retry_max_seconds: float = 300.0
+
+    # Directory for generated founder-export artifacts.
+    export_dir: str = "exports"
+
 
 @lru_cache
 def get_settings() -> Settings:

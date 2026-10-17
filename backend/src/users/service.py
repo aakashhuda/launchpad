@@ -148,23 +148,37 @@ class ProfileService:
         """Create a profile for ``user`` with a race-safe unique slug."""
         role = RoleService(self.db).get_or_create(payload.role_slug)
         base = payload.nick_name or user.email
+        profile: Profile | None = None
         for _ in range(_MAX_SLUG_RETRIES):
             slug = crud.generate_unique_slug(self.db, base)
             try:
                 with self.db.begin_nested():
-                    return crud.create_profile(
+                    profile = crud.create_profile(
                         self.db,
                         user=user,
                         role_id=role.id,
                         nick_name=payload.nick_name,
                         slug=slug,
                     )
+                break
             except IntegrityError:
                 continue  # slug collision — retry with a fresh slug
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Could not assign a unique profile slug",
-        )
+        if profile is None:
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail="Could not assign a unique profile slug",
+            )
+        self._seed_notification_preference(profile.id)
+        return profile
+
+    def _seed_notification_preference(self, profile_id: int) -> None:
+        """Ensure every new profile starts with default-all-enabled preferences.
+
+        Imported lazily to avoid a users <-> notifications import cycle.
+        """
+        from src.notifications.service import NotificationPreferenceService
+
+        NotificationPreferenceService(self.db).ensure_for_profile(profile_id)
 
 
 class MemberFollowService:

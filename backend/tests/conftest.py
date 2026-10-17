@@ -10,12 +10,12 @@ from src.main import app
 
 @pytest.fixture(autouse=True)
 def _clear_discovery_cache() -> Iterator[None]:
-    """Drop cached discovery reads so tests never observe another test's data."""
+    """Drop cached discovery reads and queued jobs so tests stay independent."""
     try:
         from src.integrations.redis import get_redis_client
 
         redis = get_redis_client()
-        keys = list(redis.scan_iter("cache:discovery:*"))
+        keys = list(redis.scan_iter("cache:discovery:*")) + list(redis.scan_iter("events:task*"))
         if keys:
             redis.delete(*keys)
     except Exception:

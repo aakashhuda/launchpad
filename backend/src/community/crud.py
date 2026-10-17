@@ -1,16 +1,11 @@
 from __future__ import annotations
 
+from datetime import date
+
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
-from src.community.models import (
-    Comment,
-    Report,
-    ReportReason,
-    ReportStatus,
-    ReportTargetType,
-    Vote,
-)
+from src.community.models import Comment, Report, ReportReason, ReportStatus, ReportTargetType, Vote
 from src.products.models import Product, ProductTopic
 from src.topics.models import TopicFollow
 from src.users.models import MemberFollow
@@ -40,6 +35,18 @@ def delete_vote(db: Session, product_id: int, profile_id: int) -> None:
 
 def count_votes_for_product(db: Session, product_id: int) -> int:
     return int(db.scalar(select(func.count(Vote.id)).where(Vote.product_id == product_id)) or 0)
+
+
+def list_vote_counts_by_day(db: Session, product_id: int) -> list[tuple[date, int]]:
+    """Vote totals per UTC day for a product, oldest first (dashboard chart data)."""
+    day = func.date(Vote.created_at)
+    rows = db.execute(
+        select(day.label("day"), func.count(Vote.id).label("total"))
+        .where(Vote.product_id == product_id)
+        .group_by(day)
+        .order_by(day.asc())
+    ).all()
+    return [(row.day, int(row.total)) for row in rows]
 
 
 # --- comments ---
@@ -75,6 +82,12 @@ def list_comments_by_product(db: Session, product_id: int) -> list[Comment]:
             .where(Comment.product_id == product_id)
             .order_by(Comment.created_at.asc(), Comment.id.asc())
         )
+    )
+
+
+def count_comments_for_product(db: Session, product_id: int) -> int:
+    return int(
+        db.scalar(select(func.count(Comment.id)).where(Comment.product_id == product_id)) or 0
     )
 
 

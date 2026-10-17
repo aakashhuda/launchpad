@@ -6,6 +6,7 @@ from sqlalchemy import delete, func, select
 from sqlalchemy.orm import Session
 
 from src.products.models import (
+    FounderExport,
     LaunchState,
     Product,
     ProductLaunch,
@@ -183,3 +184,21 @@ def count_launches_for_profile_on_date(
     if exclude_product_id is not None:
         stmt = stmt.where(ProductLaunch.product_id != exclude_product_id)
     return int(db.scalar(stmt) or 0)
+
+
+def create_export(db: Session, *, product_id: int, requested_by_profile_id: int) -> FounderExport:
+    export = FounderExport(product_id=product_id, requested_by_profile_id=requested_by_profile_id)
+    db.add(export)
+    db.flush()
+    return export
+
+
+def get_export(db: Session, export_id: int) -> FounderExport | None:
+    return db.get(FounderExport, export_id)
+
+
+def update_export(db: Session, export: FounderExport, **fields: object) -> FounderExport:
+    for key, value in fields.items():
+        setattr(export, key, value)
+    db.flush()
+    return export

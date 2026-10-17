@@ -78,6 +78,16 @@ class RankingService:
             for index, (product, count, score) in enumerate(page)
         ]
 
+    def for_date(self, on_date: date, *, limit: int, offset: int) -> list[RankedProductRead]:
+        """Rank a specific day's launches, scored at that day's close (digests)."""
+        rows = crud.list_launches_for_date(self.db, on_date, today=on_date)
+        ranked = _rank_rows(rows, now=_day_close(on_date))
+        page = ranked[offset : offset + limit]
+        return [
+            _ranked_read(rank=offset + index + 1, product=product, vote_count=count, score=score)
+            for index, (product, count, score) in enumerate(page)
+        ]
+
 
 class LeaderboardService:
     """Per-topic leaderboards for week/month/all-time windows (Redis-cached)."""

@@ -1,11 +1,12 @@
 from __future__ import annotations
 
 import enum
+import uuid
 from datetime import date, datetime, timezone
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 
-from src.products.models import LaunchState, ProductStatus, SubmissionStatus
+from src.products.models import ExportStatus, LaunchState, ProductStatus, SubmissionStatus
 
 MAX_TOPICS_PER_PRODUCT = 3
 
@@ -125,3 +126,16 @@ class LaunchScheduleRequest(BaseModel):
         if value < datetime.now(timezone.utc).date():
             raise ValueError("Launch date cannot be in the past")
         return value
+
+
+class ExportRead(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: int
+    export_uuid: uuid.UUID
+    product_id: int
+    status: ExportStatus
+    artifact_path: str | None
+    error: str | None
+    created_at: datetime
+    updated_at: datetime

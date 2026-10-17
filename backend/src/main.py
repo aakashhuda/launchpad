@@ -10,6 +10,7 @@ from src.core.constants import API_V1_PREFIX
 from src.core.logging import configure_logging
 from src.discovery import jobs as discovery_jobs  # noqa: F401  (register discovery jobs)
 from src.discovery.router import router as discovery_router
+from src.notifications import jobs as notifications_jobs  # noqa: F401  (register notification jobs)
 from src.notifications.router import router as notifications_router
 from src.products import jobs as products_jobs  # noqa: F401  (register product jobs)
 from src.products.router import router as products_router

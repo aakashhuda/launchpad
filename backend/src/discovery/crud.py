@@ -133,6 +133,34 @@ def search_products(
 # --- day snapshots (write-once) ---
 
 
+def list_ranked_products_since(
+    db: Session, *, since: date, today: date, limit: int
+) -> list[tuple[Product, int]]:
+    """Top publicly visible products by votes among launches on/after ``since``."""
+    votes = _vote_counts_subquery()
+    stmt = (
+        select(Product, func.coalesce(votes.c.vote_count, 0).label("vote_count"))
+        .join(ProductLaunch, ProductLaunch.product_id == Product.id)
+        .join(Profile, Profile.id == Product.profile_id)
+        .join(User, User.id == Profile.user_id)
+        .outerjoin(votes, votes.c.product_id == Product.id)
+        .where(*_visible_conditions(today), ProductLaunch.launch_date >= since)
+        .order_by(func.coalesce(votes.c.vote_count, 0).desc(), Product.id.asc())
+        .limit(limit)
+    )
+    return [tuple(row) for row in db.execute(stmt).all()]
+
+
+def get_snapshot_item_for_product(db: Session, product_id: int) -> DaySnapshotItem | None:
+    """The frozen snapshot entry for a product (its rank on its launch day)."""
+    return db.scalar(
+        select(DaySnapshotItem)
+        .where(DaySnapshotItem.product_id == product_id)
+        .order_by(DaySnapshotItem.snapshot_id.desc())
+        .limit(1)
+    )
+
+
 def get_snapshot_by_date(db: Session, on_date: date) -> DaySnapshot | None:
     # Eager-load items + their products so the read path is single-round-trip
     # (no N+1 when serializing a day's ranked entries).

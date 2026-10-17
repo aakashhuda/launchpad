@@ -34,6 +34,28 @@ class NotificationChannel(str, enum.Enum):
     IN_APP = "in_app"
 
 
+class NotificationEventType(str, enum.Enum):
+    """Domain events a member can be notified about.
+
+    Values are dotted and mirror ``staff.models.AuditEventType`` (e.g.
+    ``submission.approved``), tying each client-brief trigger to one event type
+    and one ``NotificationPreference`` flag (see
+    ``notifications.service.EVENT_PREFERENCE_FLAGS``).
+    """
+
+    EMAIL_VERIFICATION_REQUESTED = "email.verification_requested"
+    PASSWORD_RESET_REQUESTED = "password.reset_requested"
+    SUBMISSION_APPROVED = "submission.approved"
+    SUBMISSION_REJECTED = "submission.rejected"
+    SUBMISSION_CHANGES_REQUESTED = "submission.changes_requested"
+    LAUNCH_REMINDER = "launch.reminder"
+    LAUNCH_ACTIVATED = "launch.activated"
+    COMMENT_CREATED = "comment.created"
+    RANKING_DAILY_TOP_FIVE = "ranking.daily_top_five"
+    RANKING_WEEKLY_BEST = "ranking.weekly_best"
+    FOUNDER_EXPORT_READY = "founder.export_ready"
+
+
 class NotificationDeliveryStatus(str, enum.Enum):
     PENDING = "pending"
     RETRYING = "retrying"
@@ -93,7 +115,16 @@ class Notification(CreatedAtMixin, Base):
     actor_profile_id: Mapped[int | None] = mapped_column(
         ForeignKey("profiles.id", ondelete="SET NULL")
     )
-    event_type: Mapped[str] = mapped_column(String(50), nullable=False)
+    event_type: Mapped[NotificationEventType] = mapped_column(
+        Enum(
+            NotificationEventType,
+            native_enum=False,
+            length=50,
+            create_constraint=False,
+            values_callable=enum_values,
+        ),
+        nullable=False,
+    )
     payload: Mapped[dict] = mapped_column(JSONB, nullable=False)
     read_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
 
