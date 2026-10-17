@@ -1,5 +1,15 @@
 # Initial DB Design
 
+> **Note:** This is the original Phase-1 design sketch (DrawDB). The
+> **authoritative** schema is the SQLAlchemy models in
+> `backend/src/<domain>/models.py` and the Alembic migrations in
+> `backend/alembic/versions/`; see the ERD in `context/project-overview.md`.
+> Since this sketch was written the schema also gained: `users.status` /
+> `suspended_at` / `suspension_reason`, `product_launches.snapshot_frozen_at`,
+> `featured_products`, `day_snapshots` / `day_snapshot_items`,
+> `founder_exports`, and notification-delivery retry columns
+> (`attempt_count`, `next_retry_at`). Treat the SQL below as historical.
+
 Designed in DrawDB by Syed Mahbubul Huda
 
 ## Revised Design (Phase-1 Aligned)

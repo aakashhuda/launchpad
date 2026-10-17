@@ -70,6 +70,9 @@
 - Keep the task *infrastructure* (queue adapter, executor, retry policy, scheduler, dispatch registry) centralized in `src/tasks/`.
 - Define *concrete jobs* inside the domain that owns the business logic, e.g. `src/notifications/jobs.py`, `src/products/jobs.py`.
 - Domains enqueue jobs by **string name** via `src/tasks/scheduler.py` (e.g. `enqueue("notifications.send_daily_digest", payload)`); the executor resolves names to domain job functions at runtime. This avoids cross-domain imports and preserves directional dependency rules.
+- Suspicious-behavior monitoring lives in `src/staff/monitor.py` and enqueues
+  `staff.evaluate_abuse_signal` (records an `abuse.signal_raised` audit entry —
+  monitoring only, it never blocks a request).
 
 ## Naming
 
@@ -85,6 +88,12 @@
 - Keep response shapes stable and explicit.
 - Enforce role/ownership checks via dependencies and service-level guards.
 - Prefer idempotent semantics for retry-prone write endpoints where applicable.
+- Keep evolution **additive** on `/api/v1`; breaking changes require a new
+  version segment or an explicit deprecation window (see
+  `context/api-versioning-policy.md`).
+- The committed `backend/openapi.json` baseline is CI-guarded by
+  `scripts/openapi_compat.py`; refresh it with `scripts/export_openapi.py` after
+  an intentional additive change.
 
 ## Error Handling
 
@@ -99,7 +108,26 @@
 - Use JWT access/refresh strategy with bounded expirations.
 - Never commit real secrets to repository; use environment variables.
 - Apply rate limiting and abuse controls for auth, voting, and reporting endpoints.
+- Apply rate limiting per endpoint with the `rate_limit(bucket, limit_setting=...)`
+  dependency (`src/core/rate_limit.py`) on auth/vote/comment/report; it is
+  Redis-backed, non-authoritative, and fail-open.
 - Enforce least-privilege authorization for member/founder/reviewer/admin roles.
+- Governance actions (suspend/reactivate member, takedown/restore/feature
+  products) use `require_verified_role("admin")` and record a `StaffAction` +
+  `AuditLog`. Suspended users are rejected at the auth boundary
+  (`src/core/dependencies.py`). Authorization is by role **slug**; the
+  `Role.permissions` JSONB is advisory metadata only.
+
+## Observability & Request Context
+
+- Every request gets a correlation id via `CorrelationIdMiddleware`
+  (`src/core/middleware.py`), held in context vars (`src/core/context.py`) and
+  echoed on the response as `X-Request-Id`.
+- `AuditLogService.record` reads `correlation_id`/`ip_address`/`user_agent` from
+  the request context — don't thread them through service signatures manually.
+- Logging is structured JSON (`src/core/logging.py`) with the correlation id on
+  every line. Let the global exception handler log server-side errors and return
+  a generic client message (never leak internals).
 
 ## Code Quality & Testing
 
@@ -108,3 +136,7 @@
 - Cover core security and auth helpers with unit tests.
 - Require passing lint/type/tests before merge.
 - Keep dead code, commented code, and unused imports out of main branches.
+- CI (`.github/workflows/backend-ci.yml`) enforces ruff, black, isort, mypy,
+  `alembic upgrade head` + `alembic check`, the OpenAPI compatibility check, and
+  pytest on every PR and on `main`. Coverage is reported via `pytest-cov`; mypy
+  runs on `src` with the pydantic plugin configured in `pyproject.toml`.

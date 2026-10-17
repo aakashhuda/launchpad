@@ -1,6 +1,7 @@
 from pathlib import Path
 
 from fastapi import Depends, FastAPI, status
+from fastapi.openapi.docs import get_redoc_html
 from fastapi.responses import JSONResponse
 from fastapi.staticfiles import StaticFiles
 from sqlalchemy import text
@@ -28,10 +29,15 @@ from src.topics.router import router as topics_router
 from src.users.router import router as users_router
 from src.web.router import web_router
 
+# FastAPI's default ReDoc page loads ``redoc@next``, which now resolves to an
+# ESM release candidate that a classic ``<script>`` cannot execute — the page
+# renders blank. Pin a stable UMD build instead.
+REDOC_JS_URL = "https://cdn.jsdelivr.net/npm/redoc@2.1.5/bundles/redoc.standalone.js"
+
 
 def create_app() -> FastAPI:
     configure_logging()
-    app = FastAPI(title=settings.app_name, debug=settings.debug)
+    app = FastAPI(title=settings.app_name, debug=settings.debug, redoc_url=None)
     app.add_middleware(CorrelationIdMiddleware)
     app.mount(
         "/static",
@@ -39,6 +45,14 @@ def create_app() -> FastAPI:
         name="static",
     )
     register_exception_handlers(app)
+
+    @app.get("/redoc", include_in_schema=False)
+    def redoc_html():
+        return get_redoc_html(
+            openapi_url=app.openapi_url,
+            title=f"{app.title} - ReDoc",
+            redoc_js_url=REDOC_JS_URL,
+        )
 
     prefix = API_V1_PREFIX
     app.include_router(auth_router, prefix=f"{prefix}/auth", tags=["auth"])

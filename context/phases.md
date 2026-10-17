@@ -4,6 +4,8 @@ A phase-by-phase execution guide for the Launchpad backend, aligned with our mod
 
 ## Phase 1 — Domain Model & Migration Foundation
 
+> **Status:** ✅ Complete.
+
 ### Objectives
 
 - Translate client brief rules into concrete PostgreSQL schema design.
@@ -37,6 +39,8 @@ A phase-by-phase execution guide for the Launchpad backend, aligned with our mod
 
 ## Phase 2 — Authentication, Authorization & Profile Lifecycle
 
+> **Status:** ✅ Complete.
+
 ### Objectives
 
 - Deliver production-grade auth baseline with JWT and role-aware access control.
@@ -69,6 +73,8 @@ A phase-by-phase execution guide for the Launchpad backend, aligned with our mod
 
 ## Phase 3 — Product Submission & Moderation Workflow
 
+> **Status:** ✅ Complete.
+
 ### Objectives
 
 - Implement the core founder-to-reviewer publishing workflow.
@@ -98,6 +104,8 @@ A phase-by-phase execution guide for the Launchpad backend, aligned with our mod
 ---
 
 ## Phase 4 — Voting, Comments, Reporting & Feed Foundations
+
+> **Status:** ✅ Complete.
 
 ### Objectives
 
@@ -129,6 +137,8 @@ A phase-by-phase execution guide for the Launchpad backend, aligned with our mod
 
 ## Phase 5 — Ranking, Search, and Historical Snapshots
 
+> **Status:** ✅ Complete.
+
 ### Objectives
 
 - Implement discovery logic that matches product vision: quality velocity ranking and immutable history.
@@ -156,6 +166,8 @@ A phase-by-phase execution guide for the Launchpad backend, aligned with our mod
 
 ## Phase 6 — Notifications & Background Processing Reliability
 
+> **Status:** ✅ Complete.
+
 ### Objectives
 
 - Build resilient async processing for user notifications and long-running jobs.
@@ -182,6 +194,8 @@ A phase-by-phase execution guide for the Launchpad backend, aligned with our mod
 ---
 
 ## Phase 7 — Staff Tools, Security Hardening & Operational Readiness
+
+> **Status:** ✅ Complete.
 
 ### Objectives
 
@@ -212,6 +226,8 @@ A phase-by-phase execution guide for the Launchpad backend, aligned with our mod
 ---
 
 ## Phase 8 — Quality Gates, CI, and Release Discipline
+
+> **Status:** ✅ Complete.
 
 ### Objectives
 

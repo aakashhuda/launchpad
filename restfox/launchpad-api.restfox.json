@@ -1,0 +1,1746 @@
+{
+  "exportedFrom": "Restfox-1.0.0",
+  "collection": [
+    {
+      "_id": "grp-root",
+      "_type": "request_group",
+      "name": "Launchpad API",
+      "parentId": null,
+      "workspaceId": "launchpad",
+      "sortOrder": 0,
+      "plugins": [],
+      "environment": {
+        "baseUrl": "http://localhost:8000",
+        "user_email": "tester@example.com",
+        "user_password": "password123",
+        "new_password": "newpass123",
+        "access_token": "",
+        "refresh_token": "",
+        "user_id": "",
+        "profile_slug": "",
+        "product_id": "",
+        "submission_id": "",
+        "comment_id": "",
+        "report_id": "",
+        "notification_id": "",
+        "export_id": "",
+        "topic_slug": "ai",
+        "snapshot_date": "",
+        "launch_date": "",
+        "verification_token": "",
+        "reset_token": "",
+        "google_id_token": ""
+      }
+    },
+    {
+      "_id": "grp-auth",
+      "_type": "request_group",
+      "name": "Auth",
+      "parentId": "grp-root",
+      "workspaceId": "launchpad",
+      "sortOrder": 0,
+      "plugins": []
+    },
+    {
+      "_id": "req-signup",
+      "_type": "request",
+      "name": "Signup",
+      "method": "POST",
+      "url": "{{baseUrl}}/api/v1/auth/signup",
+      "parentId": "grp-auth",
+      "workspaceId": "launchpad",
+      "sortOrder": 0,
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        }
+      ],
+      "parameters": [],
+      "pathParameters": [],
+      "plugins": [
+        {
+          "_id": "plg-req-signup",
+          "name": "script",
+          "type": "script",
+          "code": {
+            "pre_request": "",
+            "post_request": "try {\n  const body = rf.response.getBodyJSON()\n  if (body.access_token) rf.setEnvVar('access_token', body.access_token)\n  if (body.refresh_token) rf.setEnvVar('refresh_token', body.refresh_token)\n  test('response has an access_token', () => { expect(body).to.have.property('access_token') })\n} catch (error) {\n  test('response is JSON', () => { expect.fail('non-JSON response: ' + error.message) })\n}"
+          },
+          "workspaceId": "launchpad",
+          "collectionId": "req-signup",
+          "enabled": true,
+          "createdAt": 0,
+          "updatedAt": 0
+        }
+      ],
+      "description": "Create a member account. Captures access/refresh tokens.",
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"email\": \"{{user_email}}\",\n  \"password\": \"{{user_password}}\",\n  \"first_name\": \"Test\",\n  \"last_name\": \"User\",\n  \"role\": \"member\"\n}"
+      }
+    },
+    {
+      "_id": "req-login",
+      "_type": "request",
+      "name": "Login",
+      "method": "POST",
+      "url": "{{baseUrl}}/api/v1/auth/login",
+      "parentId": "grp-auth",
+      "workspaceId": "launchpad",
+      "sortOrder": 1,
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        }
+      ],
+      "parameters": [],
+      "pathParameters": [],
+      "plugins": [
+        {
+          "_id": "plg-req-login",
+          "name": "script",
+          "type": "script",
+          "code": {
+            "pre_request": "",
+            "post_request": "try {\n  const body = rf.response.getBodyJSON()\n  if (body.access_token) rf.setEnvVar('access_token', body.access_token)\n  if (body.refresh_token) rf.setEnvVar('refresh_token', body.refresh_token)\n  test('response has an access_token', () => { expect(body).to.have.property('access_token') })\n} catch (error) {\n  test('response is JSON', () => { expect.fail('non-JSON response: ' + error.message) })\n}"
+          },
+          "workspaceId": "launchpad",
+          "collectionId": "req-login",
+          "enabled": true,
+          "createdAt": 0,
+          "updatedAt": 0
+        }
+      ],
+      "description": "Log in and capture tokens.",
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"email\": \"{{user_email}}\",\n  \"password\": \"{{user_password}}\"\n}"
+      }
+    },
+    {
+      "_id": "req-refresh",
+      "_type": "request",
+      "name": "Refresh (rotate)",
+      "method": "POST",
+      "url": "{{baseUrl}}/api/v1/auth/refresh",
+      "parentId": "grp-auth",
+      "workspaceId": "launchpad",
+      "sortOrder": 2,
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        }
+      ],
+      "parameters": [],
+      "pathParameters": [],
+      "plugins": [
+        {
+          "_id": "plg-req-refresh",
+          "name": "script",
+          "type": "script",
+          "code": {
+            "pre_request": "",
+            "post_request": "try {\n  const body = rf.response.getBodyJSON()\n  if (body.access_token) rf.setEnvVar('access_token', body.access_token)\n  if (body.refresh_token) rf.setEnvVar('refresh_token', body.refresh_token)\n  test('response has an access_token', () => { expect(body).to.have.property('access_token') })\n} catch (error) {\n  test('response is JSON', () => { expect.fail('non-JSON response: ' + error.message) })\n}"
+          },
+          "workspaceId": "launchpad",
+          "collectionId": "req-refresh",
+          "enabled": true,
+          "createdAt": 0,
+          "updatedAt": 0
+        }
+      ],
+      "description": "Rotate the refresh token; captures the new pair.",
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"refresh_token\": \"{{refresh_token}}\"\n}"
+      }
+    },
+    {
+      "_id": "req-logout",
+      "_type": "request",
+      "name": "Logout",
+      "method": "POST",
+      "url": "{{baseUrl}}/api/v1/auth/logout",
+      "parentId": "grp-auth",
+      "workspaceId": "launchpad",
+      "sortOrder": 3,
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        }
+      ],
+      "parameters": [],
+      "pathParameters": [],
+      "plugins": [],
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"refresh_token\": \"{{refresh_token}}\"\n}"
+      }
+    },
+    {
+      "_id": "req-verify",
+      "_type": "request",
+      "name": "Verify Email",
+      "method": "POST",
+      "url": "{{baseUrl}}/api/v1/auth/verify-email",
+      "parentId": "grp-auth",
+      "workspaceId": "launchpad",
+      "sortOrder": 4,
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        }
+      ],
+      "parameters": [],
+      "pathParameters": [],
+      "plugins": [],
+      "description": "Dev: generate the token with create_email_verification_token(str(user_id)).",
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"token\": \"{{verification_token}}\"\n}"
+      }
+    },
+    {
+      "_id": "req-forgot",
+      "_type": "request",
+      "name": "Forgot Password",
+      "method": "POST",
+      "url": "{{baseUrl}}/api/v1/auth/forgot-password",
+      "parentId": "grp-auth",
+      "workspaceId": "launchpad",
+      "sortOrder": 5,
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        }
+      ],
+      "parameters": [],
+      "pathParameters": [],
+      "plugins": [],
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"email\": \"{{user_email}}\"\n}"
+      }
+    },
+    {
+      "_id": "req-reset",
+      "_type": "request",
+      "name": "Reset Password",
+      "method": "POST",
+      "url": "{{baseUrl}}/api/v1/auth/reset-password",
+      "parentId": "grp-auth",
+      "workspaceId": "launchpad",
+      "sortOrder": 6,
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        }
+      ],
+      "parameters": [],
+      "pathParameters": [],
+      "plugins": [],
+      "description": "Dev: generate the token with create_password_reset_token(str(user_id)).",
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"token\": \"{{reset_token}}\",\n  \"new_password\": \"{{new_password}}\"\n}"
+      }
+    },
+    {
+      "_id": "req-change-pw",
+      "_type": "request",
+      "name": "Change Password",
+      "method": "POST",
+      "url": "{{baseUrl}}/api/v1/auth/change-password",
+      "parentId": "grp-auth",
+      "workspaceId": "launchpad",
+      "sortOrder": 7,
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        },
+        {
+          "name": "Authorization",
+          "value": "Bearer {{access_token}}"
+        }
+      ],
+      "parameters": [],
+      "pathParameters": [],
+      "plugins": [],
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"current_password\": \"{{user_password}}\",\n  \"new_password\": \"{{new_password}}\"\n}"
+      }
+    },
+    {
+      "_id": "req-google",
+      "_type": "request",
+      "name": "Google Sign-in",
+      "method": "POST",
+      "url": "{{baseUrl}}/api/v1/auth/google",
+      "parentId": "grp-auth",
+      "workspaceId": "launchpad",
+      "sortOrder": 8,
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        }
+      ],
+      "parameters": [],
+      "pathParameters": [],
+      "plugins": [],
+      "description": "Returns 501 until GOOGLE_CLIENT_ID is configured.",
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"id_token\": \"{{google_id_token}}\"\n}"
+      }
+    },
+    {
+      "_id": "grp-users",
+      "_type": "request_group",
+      "name": "Users",
+      "parentId": "grp-root",
+      "workspaceId": "launchpad",
+      "sortOrder": 1,
+      "plugins": []
+    },
+    {
+      "_id": "req-me",
+      "_type": "request",
+      "name": "Me",
+      "method": "GET",
+      "url": "{{baseUrl}}/api/v1/users/me",
+      "parentId": "grp-users",
+      "workspaceId": "launchpad",
+      "sortOrder": 0,
+      "headers": [
+        {
+          "name": "Authorization",
+          "value": "Bearer {{access_token}}"
+        }
+      ],
+      "parameters": [],
+      "pathParameters": [],
+      "plugins": [
+        {
+          "_id": "plg-req-me",
+          "name": "script",
+          "type": "script",
+          "code": {
+            "pre_request": "",
+            "post_request": "try {\n  const body = rf.response.getBodyJSON()\n  if (body.id) rf.setEnvVar('user_id', String(body.id))\n  if (body.profiles && body.profiles[0]) rf.setEnvVar('profile_slug', body.profiles[0].slug)\n  test('me returns profiles', () => { expect(body).to.have.property('profiles') })\n} catch (error) {\n  test('response is JSON', () => { expect.fail('non-JSON response: ' + error.message) })\n}"
+          },
+          "workspaceId": "launchpad",
+          "collectionId": "req-me",
+          "enabled": true,
+          "createdAt": 0,
+          "updatedAt": 0
+        }
+      ],
+      "description": "Current user + profiles. Captures user_id and profile_slug."
+    },
+    {
+      "_id": "req-profile",
+      "_type": "request",
+      "name": "Profile by slug",
+      "method": "GET",
+      "url": "{{baseUrl}}/api/v1/users/:slug",
+      "parentId": "grp-users",
+      "workspaceId": "launchpad",
+      "sortOrder": 1,
+      "headers": [],
+      "parameters": [],
+      "pathParameters": [
+        {
+          "name": "slug",
+          "value": "{{profile_slug}}"
+        }
+      ],
+      "plugins": []
+    },
+    {
+      "_id": "req-follow",
+      "_type": "request",
+      "name": "Follow member",
+      "method": "POST",
+      "url": "{{baseUrl}}/api/v1/users/:slug/follow",
+      "parentId": "grp-users",
+      "workspaceId": "launchpad",
+      "sortOrder": 2,
+      "headers": [
+        {
+          "name": "Authorization",
+          "value": "Bearer {{access_token}}"
+        }
+      ],
+      "parameters": [],
+      "pathParameters": [
+        {
+          "name": "slug",
+          "value": "{{profile_slug}}"
+        }
+      ],
+      "plugins": []
+    },
+    {
+      "_id": "req-unfollow",
+      "_type": "request",
+      "name": "Unfollow member",
+      "method": "DELETE",
+      "url": "{{baseUrl}}/api/v1/users/:slug/follow",
+      "parentId": "grp-users",
+      "workspaceId": "launchpad",
+      "sortOrder": 3,
+      "headers": [
+        {
+          "name": "Authorization",
+          "value": "Bearer {{access_token}}"
+        }
+      ],
+      "parameters": [],
+      "pathParameters": [
+        {
+          "name": "slug",
+          "value": "{{profile_slug}}"
+        }
+      ],
+      "plugins": []
+    },
+    {
+      "_id": "req-following",
+      "_type": "request",
+      "name": "My following",
+      "method": "GET",
+      "url": "{{baseUrl}}/api/v1/users/me/following",
+      "parentId": "grp-users",
+      "workspaceId": "launchpad",
+      "sortOrder": 4,
+      "headers": [
+        {
+          "name": "Authorization",
+          "value": "Bearer {{access_token}}"
+        }
+      ],
+      "parameters": [],
+      "pathParameters": [],
+      "plugins": []
+    },
+    {
+      "_id": "grp-products",
+      "_type": "request_group",
+      "name": "Products",
+      "parentId": "grp-root",
+      "workspaceId": "launchpad",
+      "sortOrder": 2,
+      "plugins": []
+    },
+    {
+      "_id": "req-create-product",
+      "_type": "request",
+      "name": "Create product",
+      "method": "POST",
+      "url": "{{baseUrl}}/api/v1/products",
+      "parentId": "grp-products",
+      "workspaceId": "launchpad",
+      "sortOrder": 0,
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        },
+        {
+          "name": "Authorization",
+          "value": "Bearer {{access_token}}"
+        }
+      ],
+      "parameters": [],
+      "pathParameters": [],
+      "plugins": [
+        {
+          "_id": "plg-req-create-product",
+          "name": "script",
+          "type": "script",
+          "code": {
+            "pre_request": "",
+            "post_request": "try {\n  const body = rf.response.getBodyJSON()\n  if (body.id) rf.setEnvVar('product_id', String(body.id))\n  test('draft has an id', () => { expect(body).to.have.property('id') })\n} catch (error) {\n  test('response is JSON', () => { expect.fail('non-JSON response: ' + error.message) })\n}"
+          },
+          "workspaceId": "launchpad",
+          "collectionId": "req-create-product",
+          "enabled": true,
+          "createdAt": 0,
+          "updatedAt": 0
+        }
+      ],
+      "description": "Founder creates a draft. Captures product_id.",
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"name\": \"Acme Rocket\",\n  \"one_line_pitch\": \"Launch things fast\",\n  \"description\": \"A longer description of the product.\",\n  \"logo_url\": \"https://example.com/logo.png\",\n  \"website_url\": \"https://example.com\",\n  \"topics\": [\n    \"AI\",\n    \"DevTools\"\n  ]\n}"
+      }
+    },
+    {
+      "_id": "req-my-products",
+      "_type": "request",
+      "name": "My products",
+      "method": "GET",
+      "url": "{{baseUrl}}/api/v1/products/mine",
+      "parentId": "grp-products",
+      "workspaceId": "launchpad",
+      "sortOrder": 1,
+      "headers": [
+        {
+          "name": "Authorization",
+          "value": "Bearer {{access_token}}"
+        }
+      ],
+      "parameters": [],
+      "pathParameters": [],
+      "plugins": []
+    },
+    {
+      "_id": "req-read-product",
+      "_type": "request",
+      "name": "Read product",
+      "method": "GET",
+      "url": "{{baseUrl}}/api/v1/products/:productId",
+      "parentId": "grp-products",
+      "workspaceId": "launchpad",
+      "sortOrder": 2,
+      "headers": [],
+      "parameters": [],
+      "pathParameters": [
+        {
+          "name": "productId",
+          "value": "{{product_id}}"
+        }
+      ],
+      "plugins": []
+    },
+    {
+      "_id": "req-update-product",
+      "_type": "request",
+      "name": "Update product",
+      "method": "PATCH",
+      "url": "{{baseUrl}}/api/v1/products/:productId",
+      "parentId": "grp-products",
+      "workspaceId": "launchpad",
+      "sortOrder": 3,
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        },
+        {
+          "name": "Authorization",
+          "value": "Bearer {{access_token}}"
+        }
+      ],
+      "parameters": [],
+      "pathParameters": [
+        {
+          "name": "productId",
+          "value": "{{product_id}}"
+        }
+      ],
+      "plugins": [],
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"description\": \"Updated description.\"\n}"
+      }
+    },
+    {
+      "_id": "req-submit",
+      "_type": "request",
+      "name": "Submit for review",
+      "method": "POST",
+      "url": "{{baseUrl}}/api/v1/products/:productId/submit",
+      "parentId": "grp-products",
+      "workspaceId": "launchpad",
+      "sortOrder": 4,
+      "headers": [
+        {
+          "name": "Authorization",
+          "value": "Bearer {{access_token}}"
+        }
+      ],
+      "parameters": [],
+      "pathParameters": [
+        {
+          "name": "productId",
+          "value": "{{product_id}}"
+        }
+      ],
+      "plugins": [
+        {
+          "_id": "plg-req-submit",
+          "name": "script",
+          "type": "script",
+          "code": {
+            "pre_request": "",
+            "post_request": "try {\n  const body = rf.response.getBodyJSON()\n  if (body.id) rf.setEnvVar('submission_id', String(body.id))\n  test('submission is in_review', () => { expect(body.status).to.eql('in_review') })\n} catch (error) {\n  test('response is JSON', () => { expect.fail('non-JSON response: ' + error.message) })\n}"
+          },
+          "workspaceId": "launchpad",
+          "collectionId": "req-submit",
+          "enabled": true,
+          "createdAt": 0,
+          "updatedAt": 0
+        }
+      ]
+    },
+    {
+      "_id": "req-launch",
+      "_type": "request",
+      "name": "Schedule launch (today)",
+      "method": "POST",
+      "url": "{{baseUrl}}/api/v1/products/:productId/launch",
+      "parentId": "grp-products",
+      "workspaceId": "launchpad",
+      "sortOrder": 5,
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        },
+        {
+          "name": "Authorization",
+          "value": "Bearer {{access_token}}"
+        }
+      ],
+      "parameters": [],
+      "pathParameters": [
+        {
+          "name": "productId",
+          "value": "{{product_id}}"
+        }
+      ],
+      "plugins": [
+        {
+          "_id": "plg-req-launch",
+          "name": "script",
+          "type": "script",
+          "code": {
+            "pre_request": "rf.setEnvVar('launch_date', new Date().toISOString().slice(0, 10))",
+            "post_request": ""
+          },
+          "workspaceId": "launchpad",
+          "collectionId": "req-launch",
+          "enabled": true,
+          "createdAt": 0,
+          "updatedAt": 0
+        }
+      ],
+      "description": "Sets launch_date to today (UTC) via a pre-request script.",
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"launch_date\": \"{{launch_date}}\"\n}"
+      }
+    },
+    {
+      "_id": "req-featured",
+      "_type": "request",
+      "name": "Featured products",
+      "method": "GET",
+      "url": "{{baseUrl}}/api/v1/products/featured",
+      "parentId": "grp-products",
+      "workspaceId": "launchpad",
+      "sortOrder": 6,
+      "headers": [],
+      "parameters": [],
+      "pathParameters": [],
+      "plugins": []
+    },
+    {
+      "_id": "req-export",
+      "_type": "request",
+      "name": "Request export",
+      "method": "POST",
+      "url": "{{baseUrl}}/api/v1/products/:productId/export",
+      "parentId": "grp-products",
+      "workspaceId": "launchpad",
+      "sortOrder": 7,
+      "headers": [
+        {
+          "name": "Authorization",
+          "value": "Bearer {{access_token}}"
+        }
+      ],
+      "parameters": [],
+      "pathParameters": [
+        {
+          "name": "productId",
+          "value": "{{product_id}}"
+        }
+      ],
+      "plugins": [
+        {
+          "_id": "plg-req-export",
+          "name": "script",
+          "type": "script",
+          "code": {
+            "pre_request": "",
+            "post_request": "try {\n  const body = rf.response.getBodyJSON()\n  if (body.id) rf.setEnvVar('export_id', String(body.id))\n} catch (error) {\n  test('response is JSON', () => { expect.fail('non-JSON response: ' + error.message) })\n}"
+          },
+          "workspaceId": "launchpad",
+          "collectionId": "req-export",
+          "enabled": true,
+          "createdAt": 0,
+          "updatedAt": 0
+        }
+      ]
+    },
+    {
+      "_id": "req-export-read",
+      "_type": "request",
+      "name": "Read export",
+      "method": "GET",
+      "url": "{{baseUrl}}/api/v1/products/:productId/export/:exportId",
+      "parentId": "grp-products",
+      "workspaceId": "launchpad",
+      "sortOrder": 8,
+      "headers": [
+        {
+          "name": "Authorization",
+          "value": "Bearer {{access_token}}"
+        }
+      ],
+      "parameters": [],
+      "pathParameters": [
+        {
+          "name": "productId",
+          "value": "{{product_id}}"
+        },
+        {
+          "name": "exportId",
+          "value": "{{export_id}}"
+        }
+      ],
+      "plugins": []
+    },
+    {
+      "_id": "req-export-download",
+      "_type": "request",
+      "name": "Download export",
+      "method": "GET",
+      "url": "{{baseUrl}}/api/v1/products/:productId/export/:exportId/download",
+      "parentId": "grp-products",
+      "workspaceId": "launchpad",
+      "sortOrder": 9,
+      "headers": [
+        {
+          "name": "Authorization",
+          "value": "Bearer {{access_token}}"
+        }
+      ],
+      "parameters": [],
+      "pathParameters": [
+        {
+          "name": "productId",
+          "value": "{{product_id}}"
+        },
+        {
+          "name": "exportId",
+          "value": "{{export_id}}"
+        }
+      ],
+      "plugins": []
+    },
+    {
+      "_id": "grp-community",
+      "_type": "request_group",
+      "name": "Community",
+      "parentId": "grp-root",
+      "workspaceId": "launchpad",
+      "sortOrder": 3,
+      "plugins": []
+    },
+    {
+      "_id": "req-vote",
+      "_type": "request",
+      "name": "Vote",
+      "method": "POST",
+      "url": "{{baseUrl}}/api/v1/community/products/:productId/vote",
+      "parentId": "grp-community",
+      "workspaceId": "launchpad",
+      "sortOrder": 0,
+      "headers": [
+        {
+          "name": "Authorization",
+          "value": "Bearer {{access_token}}"
+        }
+      ],
+      "parameters": [],
+      "pathParameters": [
+        {
+          "name": "productId",
+          "value": "{{product_id}}"
+        }
+      ],
+      "plugins": []
+    },
+    {
+      "_id": "req-unvote",
+      "_type": "request",
+      "name": "Unvote",
+      "method": "DELETE",
+      "url": "{{baseUrl}}/api/v1/community/products/:productId/vote",
+      "parentId": "grp-community",
+      "workspaceId": "launchpad",
+      "sortOrder": 1,
+      "headers": [
+        {
+          "name": "Authorization",
+          "value": "Bearer {{access_token}}"
+        }
+      ],
+      "parameters": [],
+      "pathParameters": [
+        {
+          "name": "productId",
+          "value": "{{product_id}}"
+        }
+      ],
+      "plugins": []
+    },
+    {
+      "_id": "req-comment",
+      "_type": "request",
+      "name": "Comment",
+      "method": "POST",
+      "url": "{{baseUrl}}/api/v1/community/products/:productId/comments",
+      "parentId": "grp-community",
+      "workspaceId": "launchpad",
+      "sortOrder": 2,
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        },
+        {
+          "name": "Authorization",
+          "value": "Bearer {{access_token}}"
+        }
+      ],
+      "parameters": [],
+      "pathParameters": [
+        {
+          "name": "productId",
+          "value": "{{product_id}}"
+        }
+      ],
+      "plugins": [
+        {
+          "_id": "plg-req-comment",
+          "name": "script",
+          "type": "script",
+          "code": {
+            "pre_request": "",
+            "post_request": "try {\n  const body = rf.response.getBodyJSON()\n  if (body.id) rf.setEnvVar('comment_id', String(body.id))\n} catch (error) {\n  test('response is JSON', () => { expect.fail('non-JSON response: ' + error.message) })\n}"
+          },
+          "workspaceId": "launchpad",
+          "collectionId": "req-comment",
+          "enabled": true,
+          "createdAt": 0,
+          "updatedAt": 0
+        }
+      ],
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"text\": \"Great launch!\"\n}"
+      }
+    },
+    {
+      "_id": "req-comments",
+      "_type": "request",
+      "name": "List comments",
+      "method": "GET",
+      "url": "{{baseUrl}}/api/v1/community/products/:productId/comments",
+      "parentId": "grp-community",
+      "workspaceId": "launchpad",
+      "sortOrder": 3,
+      "headers": [],
+      "parameters": [],
+      "pathParameters": [
+        {
+          "name": "productId",
+          "value": "{{product_id}}"
+        }
+      ],
+      "plugins": []
+    },
+    {
+      "_id": "req-delete-comment",
+      "_type": "request",
+      "name": "Delete comment",
+      "method": "DELETE",
+      "url": "{{baseUrl}}/api/v1/community/comments/:commentId",
+      "parentId": "grp-community",
+      "workspaceId": "launchpad",
+      "sortOrder": 4,
+      "headers": [
+        {
+          "name": "Authorization",
+          "value": "Bearer {{access_token}}"
+        }
+      ],
+      "parameters": [],
+      "pathParameters": [
+        {
+          "name": "commentId",
+          "value": "{{comment_id}}"
+        }
+      ],
+      "plugins": []
+    },
+    {
+      "_id": "req-report-product",
+      "_type": "request",
+      "name": "Report product",
+      "method": "POST",
+      "url": "{{baseUrl}}/api/v1/community/products/:productId/reports",
+      "parentId": "grp-community",
+      "workspaceId": "launchpad",
+      "sortOrder": 5,
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        },
+        {
+          "name": "Authorization",
+          "value": "Bearer {{access_token}}"
+        }
+      ],
+      "parameters": [],
+      "pathParameters": [
+        {
+          "name": "productId",
+          "value": "{{product_id}}"
+        }
+      ],
+      "plugins": [
+        {
+          "_id": "plg-req-report-product",
+          "name": "script",
+          "type": "script",
+          "code": {
+            "pre_request": "",
+            "post_request": "try {\n  const body = rf.response.getBodyJSON()\n  if (body.id) rf.setEnvVar('report_id', String(body.id))\n} catch (error) {\n  test('response is JSON', () => { expect.fail('non-JSON response: ' + error.message) })\n}"
+          },
+          "workspaceId": "launchpad",
+          "collectionId": "req-report-product",
+          "enabled": true,
+          "createdAt": 0,
+          "updatedAt": 0
+        }
+      ],
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"reason\": \"spam\",\n  \"details\": \"Test report\"\n}"
+      }
+    },
+    {
+      "_id": "req-report-comment",
+      "_type": "request",
+      "name": "Report comment",
+      "method": "POST",
+      "url": "{{baseUrl}}/api/v1/community/comments/:commentId/reports",
+      "parentId": "grp-community",
+      "workspaceId": "launchpad",
+      "sortOrder": 6,
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        },
+        {
+          "name": "Authorization",
+          "value": "Bearer {{access_token}}"
+        }
+      ],
+      "parameters": [],
+      "pathParameters": [
+        {
+          "name": "commentId",
+          "value": "{{comment_id}}"
+        }
+      ],
+      "plugins": [],
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"reason\": \"abuse\"\n}"
+      }
+    },
+    {
+      "_id": "req-reports-queue",
+      "_type": "request",
+      "name": "Reports queue (staff)",
+      "method": "GET",
+      "url": "{{baseUrl}}/api/v1/community/reports",
+      "parentId": "grp-community",
+      "workspaceId": "launchpad",
+      "sortOrder": 7,
+      "headers": [
+        {
+          "name": "Authorization",
+          "value": "Bearer {{access_token}}"
+        }
+      ],
+      "parameters": [],
+      "pathParameters": [],
+      "plugins": []
+    },
+    {
+      "_id": "req-assign-report",
+      "_type": "request",
+      "name": "Assign report (staff)",
+      "method": "POST",
+      "url": "{{baseUrl}}/api/v1/community/reports/:reportId/assign",
+      "parentId": "grp-community",
+      "workspaceId": "launchpad",
+      "sortOrder": 8,
+      "headers": [
+        {
+          "name": "Authorization",
+          "value": "Bearer {{access_token}}"
+        }
+      ],
+      "parameters": [],
+      "pathParameters": [
+        {
+          "name": "reportId",
+          "value": "{{report_id}}"
+        }
+      ],
+      "plugins": []
+    },
+    {
+      "_id": "req-resolve-report",
+      "_type": "request",
+      "name": "Resolve report (staff)",
+      "method": "POST",
+      "url": "{{baseUrl}}/api/v1/community/reports/:reportId/resolve",
+      "parentId": "grp-community",
+      "workspaceId": "launchpad",
+      "sortOrder": 9,
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        },
+        {
+          "name": "Authorization",
+          "value": "Bearer {{access_token}}"
+        }
+      ],
+      "parameters": [],
+      "pathParameters": [
+        {
+          "name": "reportId",
+          "value": "{{report_id}}"
+        }
+      ],
+      "plugins": [],
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"resolution\": \"resolve\",\n  \"note\": \"Handled\"\n}"
+      }
+    },
+    {
+      "_id": "req-feed",
+      "_type": "request",
+      "name": "Feed",
+      "method": "GET",
+      "url": "{{baseUrl}}/api/v1/community/feed",
+      "parentId": "grp-community",
+      "workspaceId": "launchpad",
+      "sortOrder": 10,
+      "headers": [
+        {
+          "name": "Authorization",
+          "value": "Bearer {{access_token}}"
+        }
+      ],
+      "parameters": [],
+      "pathParameters": [],
+      "plugins": []
+    },
+    {
+      "_id": "grp-topics",
+      "_type": "request_group",
+      "name": "Topics",
+      "parentId": "grp-root",
+      "workspaceId": "launchpad",
+      "sortOrder": 4,
+      "plugins": []
+    },
+    {
+      "_id": "req-follow-topic",
+      "_type": "request",
+      "name": "Follow topic",
+      "method": "POST",
+      "url": "{{baseUrl}}/api/v1/topics/:slug/follow",
+      "parentId": "grp-topics",
+      "workspaceId": "launchpad",
+      "sortOrder": 0,
+      "headers": [
+        {
+          "name": "Authorization",
+          "value": "Bearer {{access_token}}"
+        }
+      ],
+      "parameters": [],
+      "pathParameters": [
+        {
+          "name": "slug",
+          "value": "{{topic_slug}}"
+        }
+      ],
+      "plugins": []
+    },
+    {
+      "_id": "req-unfollow-topic",
+      "_type": "request",
+      "name": "Unfollow topic",
+      "method": "DELETE",
+      "url": "{{baseUrl}}/api/v1/topics/:slug/follow",
+      "parentId": "grp-topics",
+      "workspaceId": "launchpad",
+      "sortOrder": 1,
+      "headers": [
+        {
+          "name": "Authorization",
+          "value": "Bearer {{access_token}}"
+        }
+      ],
+      "parameters": [],
+      "pathParameters": [
+        {
+          "name": "slug",
+          "value": "{{topic_slug}}"
+        }
+      ],
+      "plugins": []
+    },
+    {
+      "_id": "req-my-topics",
+      "_type": "request",
+      "name": "My followed topics",
+      "method": "GET",
+      "url": "{{baseUrl}}/api/v1/topics/me/following",
+      "parentId": "grp-topics",
+      "workspaceId": "launchpad",
+      "sortOrder": 2,
+      "headers": [
+        {
+          "name": "Authorization",
+          "value": "Bearer {{access_token}}"
+        }
+      ],
+      "parameters": [],
+      "pathParameters": [],
+      "plugins": []
+    },
+    {
+      "_id": "grp-discovery",
+      "_type": "request_group",
+      "name": "Discovery",
+      "parentId": "grp-root",
+      "workspaceId": "launchpad",
+      "sortOrder": 5,
+      "plugins": []
+    },
+    {
+      "_id": "req-today",
+      "_type": "request",
+      "name": "Today's launches",
+      "method": "GET",
+      "url": "{{baseUrl}}/api/v1/discovery/today",
+      "parentId": "grp-discovery",
+      "workspaceId": "launchpad",
+      "sortOrder": 0,
+      "headers": [],
+      "parameters": [],
+      "pathParameters": [],
+      "plugins": []
+    },
+    {
+      "_id": "req-day",
+      "_type": "request",
+      "name": "Day snapshot",
+      "method": "GET",
+      "url": "{{baseUrl}}/api/v1/discovery/launches/:date",
+      "parentId": "grp-discovery",
+      "workspaceId": "launchpad",
+      "sortOrder": 1,
+      "headers": [],
+      "parameters": [],
+      "pathParameters": [
+        {
+          "name": "date",
+          "value": "{{snapshot_date}}"
+        }
+      ],
+      "plugins": [
+        {
+          "_id": "plg-req-day",
+          "name": "script",
+          "type": "script",
+          "code": {
+            "pre_request": "rf.setEnvVar('snapshot_date', new Date(Date.now() - 86400000).toISOString().slice(0, 10))",
+            "post_request": ""
+          },
+          "workspaceId": "launchpad",
+          "collectionId": "req-day",
+          "enabled": true,
+          "createdAt": 0,
+          "updatedAt": 0
+        }
+      ],
+      "description": "A closed day's frozen ranking; the pre-request script sets the date to yesterday (days are frozen at close)."
+    },
+    {
+      "_id": "req-leaderboard",
+      "_type": "request",
+      "name": "Topic leaderboard",
+      "method": "GET",
+      "url": "{{baseUrl}}/api/v1/discovery/topics/:slug/leaderboard",
+      "parentId": "grp-discovery",
+      "workspaceId": "launchpad",
+      "sortOrder": 2,
+      "headers": [],
+      "parameters": [
+        {
+          "name": "window",
+          "value": "week"
+        },
+        {
+          "name": "limit",
+          "value": "50"
+        }
+      ],
+      "pathParameters": [
+        {
+          "name": "slug",
+          "value": "{{topic_slug}}"
+        }
+      ],
+      "plugins": []
+    },
+    {
+      "_id": "req-search",
+      "_type": "request",
+      "name": "Search products",
+      "method": "GET",
+      "url": "{{baseUrl}}/api/v1/discovery/products/search",
+      "parentId": "grp-discovery",
+      "workspaceId": "launchpad",
+      "sortOrder": 3,
+      "headers": [],
+      "parameters": [
+        {
+          "name": "q",
+          "value": "Acme"
+        },
+        {
+          "name": "sort",
+          "value": "newest"
+        }
+      ],
+      "pathParameters": [],
+      "plugins": []
+    },
+    {
+      "_id": "grp-notifications",
+      "_type": "request_group",
+      "name": "Notifications",
+      "parentId": "grp-root",
+      "workspaceId": "launchpad",
+      "sortOrder": 6,
+      "plugins": []
+    },
+    {
+      "_id": "req-notif-list",
+      "_type": "request",
+      "name": "List notifications",
+      "method": "GET",
+      "url": "{{baseUrl}}/api/v1/notifications",
+      "parentId": "grp-notifications",
+      "workspaceId": "launchpad",
+      "sortOrder": 0,
+      "headers": [
+        {
+          "name": "Authorization",
+          "value": "Bearer {{access_token}}"
+        }
+      ],
+      "parameters": [],
+      "pathParameters": [],
+      "plugins": []
+    },
+    {
+      "_id": "req-notif-unread",
+      "_type": "request",
+      "name": "Unread count",
+      "method": "GET",
+      "url": "{{baseUrl}}/api/v1/notifications/unread-count",
+      "parentId": "grp-notifications",
+      "workspaceId": "launchpad",
+      "sortOrder": 1,
+      "headers": [
+        {
+          "name": "Authorization",
+          "value": "Bearer {{access_token}}"
+        }
+      ],
+      "parameters": [],
+      "pathParameters": [],
+      "plugins": []
+    },
+    {
+      "_id": "req-notif-read",
+      "_type": "request",
+      "name": "Mark read",
+      "method": "POST",
+      "url": "{{baseUrl}}/api/v1/notifications/:notificationId/read",
+      "parentId": "grp-notifications",
+      "workspaceId": "launchpad",
+      "sortOrder": 2,
+      "headers": [
+        {
+          "name": "Authorization",
+          "value": "Bearer {{access_token}}"
+        }
+      ],
+      "parameters": [],
+      "pathParameters": [
+        {
+          "name": "notificationId",
+          "value": "{{notification_id}}"
+        }
+      ],
+      "plugins": []
+    },
+    {
+      "_id": "req-notif-read-all",
+      "_type": "request",
+      "name": "Mark all read",
+      "method": "POST",
+      "url": "{{baseUrl}}/api/v1/notifications/read-all",
+      "parentId": "grp-notifications",
+      "workspaceId": "launchpad",
+      "sortOrder": 3,
+      "headers": [
+        {
+          "name": "Authorization",
+          "value": "Bearer {{access_token}}"
+        }
+      ],
+      "parameters": [],
+      "pathParameters": [],
+      "plugins": []
+    },
+    {
+      "_id": "req-notif-prefs",
+      "_type": "request",
+      "name": "Get preferences",
+      "method": "GET",
+      "url": "{{baseUrl}}/api/v1/notifications/preferences",
+      "parentId": "grp-notifications",
+      "workspaceId": "launchpad",
+      "sortOrder": 4,
+      "headers": [
+        {
+          "name": "Authorization",
+          "value": "Bearer {{access_token}}"
+        }
+      ],
+      "parameters": [],
+      "pathParameters": [],
+      "plugins": []
+    },
+    {
+      "_id": "req-notif-prefs-patch",
+      "_type": "request",
+      "name": "Update preferences",
+      "method": "PATCH",
+      "url": "{{baseUrl}}/api/v1/notifications/preferences",
+      "parentId": "grp-notifications",
+      "workspaceId": "launchpad",
+      "sortOrder": 5,
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        },
+        {
+          "name": "Authorization",
+          "value": "Bearer {{access_token}}"
+        }
+      ],
+      "parameters": [],
+      "pathParameters": [],
+      "plugins": [],
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"comment_alert_enabled\": true\n}"
+      }
+    },
+    {
+      "_id": "grp-staff",
+      "_type": "request_group",
+      "name": "Staff",
+      "parentId": "grp-root",
+      "workspaceId": "launchpad",
+      "sortOrder": 7,
+      "plugins": []
+    },
+    {
+      "_id": "req-staff-submissions",
+      "_type": "request",
+      "name": "Submission queue",
+      "method": "GET",
+      "url": "{{baseUrl}}/api/v1/staff/submissions",
+      "parentId": "grp-staff",
+      "workspaceId": "launchpad",
+      "sortOrder": 0,
+      "headers": [
+        {
+          "name": "Authorization",
+          "value": "Bearer {{access_token}}"
+        }
+      ],
+      "parameters": [],
+      "pathParameters": [],
+      "plugins": []
+    },
+    {
+      "_id": "req-staff-decide",
+      "_type": "request",
+      "name": "Decide submission",
+      "method": "POST",
+      "url": "{{baseUrl}}/api/v1/staff/submissions/:submissionId/decision",
+      "parentId": "grp-staff",
+      "workspaceId": "launchpad",
+      "sortOrder": 1,
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        },
+        {
+          "name": "Authorization",
+          "value": "Bearer {{access_token}}"
+        }
+      ],
+      "parameters": [],
+      "pathParameters": [
+        {
+          "name": "submissionId",
+          "value": "{{submission_id}}"
+        }
+      ],
+      "plugins": [],
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"decision\": \"approve\",\n  \"note\": \"Looks good\"\n}"
+      }
+    },
+    {
+      "_id": "req-staff-reports",
+      "_type": "request",
+      "name": "Reports",
+      "method": "GET",
+      "url": "{{baseUrl}}/api/v1/staff/reports",
+      "parentId": "grp-staff",
+      "workspaceId": "launchpad",
+      "sortOrder": 2,
+      "headers": [
+        {
+          "name": "Authorization",
+          "value": "Bearer {{access_token}}"
+        }
+      ],
+      "parameters": [],
+      "pathParameters": [],
+      "plugins": []
+    },
+    {
+      "_id": "req-staff-actions",
+      "_type": "request",
+      "name": "Staff actions",
+      "method": "GET",
+      "url": "{{baseUrl}}/api/v1/staff/actions",
+      "parentId": "grp-staff",
+      "workspaceId": "launchpad",
+      "sortOrder": 3,
+      "headers": [
+        {
+          "name": "Authorization",
+          "value": "Bearer {{access_token}}"
+        }
+      ],
+      "parameters": [],
+      "pathParameters": [],
+      "plugins": []
+    },
+    {
+      "_id": "req-staff-audit",
+      "_type": "request",
+      "name": "Audit logs",
+      "method": "GET",
+      "url": "{{baseUrl}}/api/v1/staff/audit-logs",
+      "parentId": "grp-staff",
+      "workspaceId": "launchpad",
+      "sortOrder": 4,
+      "headers": [
+        {
+          "name": "Authorization",
+          "value": "Bearer {{access_token}}"
+        }
+      ],
+      "parameters": [],
+      "pathParameters": [],
+      "plugins": [],
+      "description": "Filters (event_type, entity_type, entity_id, actor_profile_id) can be added as query params."
+    },
+    {
+      "_id": "req-staff-suspend",
+      "_type": "request",
+      "name": "Suspend member (admin)",
+      "method": "POST",
+      "url": "{{baseUrl}}/api/v1/staff/users/:userId/suspend",
+      "parentId": "grp-staff",
+      "workspaceId": "launchpad",
+      "sortOrder": 5,
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        },
+        {
+          "name": "Authorization",
+          "value": "Bearer {{access_token}}"
+        }
+      ],
+      "parameters": [],
+      "pathParameters": [
+        {
+          "name": "userId",
+          "value": "{{user_id}}"
+        }
+      ],
+      "plugins": [],
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"reason\": \"Testing suspension\"\n}"
+      }
+    },
+    {
+      "_id": "req-staff-reactivate",
+      "_type": "request",
+      "name": "Reactivate member (admin)",
+      "method": "POST",
+      "url": "{{baseUrl}}/api/v1/staff/users/:userId/reactivate",
+      "parentId": "grp-staff",
+      "workspaceId": "launchpad",
+      "sortOrder": 6,
+      "headers": [
+        {
+          "name": "Authorization",
+          "value": "Bearer {{access_token}}"
+        }
+      ],
+      "parameters": [],
+      "pathParameters": [
+        {
+          "name": "userId",
+          "value": "{{user_id}}"
+        }
+      ],
+      "plugins": []
+    },
+    {
+      "_id": "req-staff-takedown",
+      "_type": "request",
+      "name": "Takedown product (admin)",
+      "method": "POST",
+      "url": "{{baseUrl}}/api/v1/staff/products/:productId/takedown",
+      "parentId": "grp-staff",
+      "workspaceId": "launchpad",
+      "sortOrder": 7,
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        },
+        {
+          "name": "Authorization",
+          "value": "Bearer {{access_token}}"
+        }
+      ],
+      "parameters": [],
+      "pathParameters": [
+        {
+          "name": "productId",
+          "value": "{{product_id}}"
+        }
+      ],
+      "plugins": [],
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"reason\": \"Policy violation\"\n}"
+      }
+    },
+    {
+      "_id": "req-staff-restore",
+      "_type": "request",
+      "name": "Restore product (admin)",
+      "method": "POST",
+      "url": "{{baseUrl}}/api/v1/staff/products/:productId/restore",
+      "parentId": "grp-staff",
+      "workspaceId": "launchpad",
+      "sortOrder": 8,
+      "headers": [
+        {
+          "name": "Authorization",
+          "value": "Bearer {{access_token}}"
+        }
+      ],
+      "parameters": [],
+      "pathParameters": [
+        {
+          "name": "productId",
+          "value": "{{product_id}}"
+        }
+      ],
+      "plugins": []
+    },
+    {
+      "_id": "req-staff-feature",
+      "_type": "request",
+      "name": "Feature product (admin)",
+      "method": "POST",
+      "url": "{{baseUrl}}/api/v1/staff/products/:productId/feature",
+      "parentId": "grp-staff",
+      "workspaceId": "launchpad",
+      "sortOrder": 9,
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        },
+        {
+          "name": "Authorization",
+          "value": "Bearer {{access_token}}"
+        }
+      ],
+      "parameters": [],
+      "pathParameters": [
+        {
+          "name": "productId",
+          "value": "{{product_id}}"
+        }
+      ],
+      "plugins": [],
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"reason\": \"Editor's pick\"\n}"
+      }
+    },
+    {
+      "_id": "req-staff-unfeature",
+      "_type": "request",
+      "name": "Unfeature product (admin)",
+      "method": "POST",
+      "url": "{{baseUrl}}/api/v1/staff/products/:productId/unfeature",
+      "parentId": "grp-staff",
+      "workspaceId": "launchpad",
+      "sortOrder": 10,
+      "headers": [
+        {
+          "name": "Authorization",
+          "value": "Bearer {{access_token}}"
+        }
+      ],
+      "parameters": [],
+      "pathParameters": [
+        {
+          "name": "productId",
+          "value": "{{product_id}}"
+        }
+      ],
+      "plugins": []
+    },
+    {
+      "_id": "grp-health",
+      "_type": "request_group",
+      "name": "Health",
+      "parentId": "grp-root",
+      "workspaceId": "launchpad",
+      "sortOrder": 8,
+      "plugins": []
+    },
+    {
+      "_id": "req-health",
+      "_type": "request",
+      "name": "Health",
+      "method": "GET",
+      "url": "{{baseUrl}}/api/v1/health",
+      "parentId": "grp-health",
+      "workspaceId": "launchpad",
+      "sortOrder": 0,
+      "headers": [],
+      "parameters": [],
+      "pathParameters": [],
+      "plugins": []
+    },
+    {
+      "_id": "req-ready",
+      "_type": "request",
+      "name": "Ready",
+      "method": "GET",
+      "url": "{{baseUrl}}/api/v1/health/ready",
+      "parentId": "grp-health",
+      "workspaceId": "launchpad",
+      "sortOrder": 1,
+      "headers": [],
+      "parameters": [],
+      "pathParameters": [],
+      "plugins": []
+    }
+  ],
+  "environments": [
+    {
+      "name": "Launchpad Local",
+      "environment": {
+        "baseUrl": "http://localhost:8000",
+        "user_email": "tester@example.com",
+        "user_password": "password123",
+        "new_password": "newpass123",
+        "access_token": "",
+        "refresh_token": "",
+        "user_id": "",
+        "profile_slug": "",
+        "product_id": "",
+        "submission_id": "",
+        "comment_id": "",
+        "report_id": "",
+        "notification_id": "",
+        "export_id": "",
+        "topic_slug": "ai",
+        "snapshot_date": "",
+        "launch_date": "",
+        "verification_token": "",
+        "reset_token": "",
+        "google_id_token": ""
+      }
+    }
+  ]
+}
